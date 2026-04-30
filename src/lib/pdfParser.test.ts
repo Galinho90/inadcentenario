@@ -5,31 +5,43 @@ describe("parseBRL", () => {
   it("converte valores BR", () => {
     expect(parseBRL("1.234,56")).toBe(1234.56);
     expect(parseBRL("99,90")).toBe(99.9);
+    expect(parseBRL("11.466,24")).toBe(11466.24);
   });
 });
 
-describe("parseDebtors", () => {
-  it("extrai unidade, nome e total", () => {
+describe("parseDebtors (formato Controller Condomínios)", () => {
+  it("extrai unidades, nomes e totais", () => {
     const text = `
-12 01
-João da Silva Souza
-Vencimento 10/01/2026 Valor 500,00
-Juros 20,00
-Total 1.520,00
-
-03 02
-Maria Aparecida Pereira
-Vencimento 10/01/2026 Valor 800,00
-Total 890,50
+Inadimplentes
+Posição em 12/01/2026
+12 01 - MARIA JOSE DA SILVA
+Vencimento Atraso Código Principal Total
+25/12/25 18 131180 180,00 180,00
+10/01/26 2 134433 120,00 120,00
+Total 300,00 300,00
+13 01 - CAIQUE VIEIRA DA SILVA
+Vencimento Atraso Código Principal Total
+24/05/25 233 75070 1.343,28 1.343,28
+Total 11.466,24 11.466,24
+14 01 - PAULO GOMES DA SILVA
+Vencimento Atraso Código Principal Total
+22/12/25 21 98596 172,91 172,91
+Total 172,91 172,91
 `;
     const result = parseDebtors(text);
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(3);
     expect(result[0]).toEqual({
       unidade: "12 01",
-      nome: "João da Silva Souza",
-      total: 1520,
+      nome: "MARIA JOSE DA SILVA",
+      total: 300,
     });
-    expect(result[1].nome).toBe("Maria Aparecida Pereira");
-    expect(result[1].total).toBe(890.5);
+    expect(result[1].nome).toBe("CAIQUE VIEIRA DA SILVA");
+    expect(result[1].total).toBe(11466.24);
+    expect(result[2].total).toBe(172.91);
+  });
+
+  it("ignora cabeçalhos sem nome válido", () => {
+    const text = `12 01 - X\nTotal 100,00 100,00\n`;
+    expect(parseDebtors(text)).toHaveLength(0);
   });
 });
