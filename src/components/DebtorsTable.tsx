@@ -638,6 +638,23 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                 Atualizar status
                               </Button>
                             )}
+                            {(() => {
+                              const link = getTribunalLink(proc!.numero_processo);
+                              if (!link) return null;
+                              return (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                  title="Abrir consulta pública no portal do tribunal (peças/documentos exigem login)"
+                                >
+                                  <a href={link.url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                                    {link.label}
+                                  </a>
+                                </Button>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
