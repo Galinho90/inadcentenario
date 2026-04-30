@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { PdfDropzone } from "@/components/PdfDropzone";
 import { DashboardOverview } from "@/components/DashboardOverview";
 import { DebtorsTable } from "@/components/DebtorsTable";
@@ -7,35 +8,52 @@ import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Save, Loader2, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
+import { AlertCircle, Loader2, Settings, Upload } from "lucide-react";
 import { parseDebtors, type Debtor } from "@/lib/pdfParser";
 import { extractTextFromPdf } from "@/lib/pdfLoader";
-import { saveReport } from "@/lib/reportsRepo";
+import {
+  loadLatestReport,
+  saveReport,
+  type ReportSummary,
+} from "@/lib/reportsRepo";
 import { toast } from "sonner";
 
 const Index = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
   const [debtors, setDebtors] = useState<Debtor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [current, setCurrent] = useState<ReportSummary | null>(null);
+  const [loadingCurrent, setLoadingCurrent] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
   const [tab, setTab] = useState("atual");
+  const [showUpload, setShowUpload] = useState(false);
 
-  const total = useMemo(
-    () => debtors.reduce((acc, d) => acc + d.total, 0),
-    [debtors]
-  );
+  const refreshCurrent = useCallback(async () => {
+    setLoadingCurrent(true);
+    try {
+      const res = await loadLatestReport();
+      if (res) {
+        setCurrent(res.summary);
+        setDebtors(res.debtors);
+      } else {
+        setCurrent(null);
+        setDebtors([]);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao carregar lista atual");
+    } finally {
+      setLoadingCurrent(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshCurrent();
+  }, [refreshCurrent]);
 
   async function handleFile(f: File) {
-    setFile(f);
-    setFileName(f.name);
-    setLoading(true);
+    setProcessing(true);
     setError(null);
-    setSavedId(null);
     try {
       const text = await extractTextFromPdf(f);
       const result = parseDebtors(text);
@@ -43,44 +61,22 @@ const Index = () => {
         setError(
           "Nenhuma unidade encontrada no padrão esperado (ex: '12 01' + nome + linha 'Total')."
         );
-        setDebtors([]);
-      } else {
-        setDebtors(result);
-        toast.success(`${result.length} inadimplentes identificados`);
+        return;
       }
-    } catch (e) {
-      console.error(e);
-      setError("Falha ao ler o PDF. Verifique se o arquivo não está corrompido.");
-      setDebtors([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSave() {
-    if (!fileName || debtors.length === 0) return;
-    setSaving(true);
-    try {
-      const id = await saveReport({ nomeArquivo: fileName, debtors });
-      setSavedId(id);
+      // Substitui a lista atual: salva como novo relatório (vira o "atual").
+      await saveReport({ nomeArquivo: f.name, debtors: result });
+      toast.success(
+        `Lista atualizada — ${result.length} inadimplentes`
+      );
+      setShowUpload(false);
       setHistoryKey((k) => k + 1);
-      toast.success("Relatório salvo no histórico");
+      await refreshCurrent();
     } catch (e) {
       console.error(e);
-      toast.error("Falha ao salvar relatório");
+      setError("Falha ao processar o PDF. Verifique se o arquivo não está corrompido.");
     } finally {
-      setSaving(false);
+      setProcessing(false);
     }
-  }
-
-
-
-  function reset() {
-    setFile(null);
-    setFileName(null);
-    setDebtors([]);
-    setError(null);
-    setSavedId(null);
   }
 
   return (
@@ -89,10 +85,11 @@ const Index = () => {
         <div className="container py-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Inadimplência — Leitor de PDF
+              Inadimplência — Dashboard
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Envie o relatório em PDF para extrair unidades, moradores e valores devidos.
+              Lista atual de inadimplentes do condomínio. Suba um novo PDF para
+              substituir a lista.
             </p>
           </div>
           <Button variant="outline" size="sm" asChild>
@@ -107,17 +104,63 @@ const Index = () => {
       <main className="container py-8 space-y-6">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="atual">Relatório atual</TabsTrigger>
+            <TabsTrigger value="atual">Lista atual</TabsTrigger>
             <TabsTrigger value="historico">Histórico</TabsTrigger>
           </TabsList>
 
           <TabsContent value="atual" className="space-y-6 mt-6">
-            <PdfDropzone
-              onFile={handleFile}
-              fileName={fileName}
-              loading={loading}
-              onReset={reset}
-            />
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-sm text-muted-foreground">
+                {current ? (
+                  <>
+                    Última atualização:{" "}
+                    <strong className="text-foreground">
+                      {new Date(current.processado_em).toLocaleString("pt-BR")}
+                    </strong>{" "}
+                    · arquivo{" "}
+                    <span className="font-mono text-xs">
+                      {current.nome_arquivo}
+                    </span>
+                  </>
+                ) : loadingCurrent ? (
+                  "Carregando lista atual..."
+                ) : (
+                  "Nenhum relatório enviado ainda."
+                )}
+              </div>
+              <Button
+                variant={showUpload ? "ghost" : "default"}
+                size="sm"
+                onClick={() => setShowUpload((v) => !v)}
+              >
+                <Upload className="h-4 w-4 mr-1.5" />
+                {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Enviar PDF"}
+              </Button>
+            </div>
+
+            {(showUpload || !current) && !loadingCurrent && (
+              <div className="space-y-3">
+                {current && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Atenção</AlertTitle>
+                    <AlertDescription>
+                      Ao enviar um novo PDF, a lista atual será{" "}
+                      <strong>substituída integralmente</strong>. O relatório
+                      anterior permanece disponível na aba Histórico, e os
+                      números de processo judicial cadastrados continuam salvos
+                      por morador.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <PdfDropzone
+                  onFile={handleFile}
+                  fileName={null}
+                  loading={processing}
+                  onReset={() => setShowUpload(false)}
+                />
+              </div>
+            )}
 
             {error && (
               <Alert variant="destructive">
@@ -127,31 +170,21 @@ const Index = () => {
               </Alert>
             )}
 
-            {debtors.length > 0 && (
+            {loadingCurrent ? (
+              <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Carregando...
+              </div>
+            ) : debtors.length > 0 ? (
               <>
-                {file && !savedId && (
-                  <div className="flex justify-end">
-                    <Button onClick={handleSave} disabled={saving}>
-                      {saving ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4 mr-2" />
-                      )}
-                      Salvar no histórico
-                    </Button>
-                  </div>
-                )}
-                {savedId && (
-                  <p className="text-xs text-muted-foreground text-right">
-                    ✓ Relatório salvo no histórico
-                  </p>
-                )}
-
-                <DashboardOverview debtors={debtors} fileName={fileName} />
-                <JudicialAlert debtors={debtors} editable={false} />
+                <DashboardOverview
+                  debtors={debtors}
+                  fileName={current?.nome_arquivo}
+                />
+                <JudicialAlert debtors={debtors} editable />
                 <DebtorsTable debtors={debtors} />
               </>
-            )}
+            ) : null}
           </TabsContent>
 
           <TabsContent value="historico" className="mt-6">
