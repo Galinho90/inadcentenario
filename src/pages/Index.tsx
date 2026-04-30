@@ -181,7 +181,7 @@ const Index = () => {
                   debtors={debtors}
                   fileName={current?.nome_arquivo}
                 />
-                <JudicialAlert debtors={debtors} editable />
+                
                 <DebtorsTable debtors={debtors} />
               </>
             ) : null}
