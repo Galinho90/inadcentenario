@@ -53,6 +53,63 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [selected, setSelected] = useState<Debtor | null>(null);
   const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
+  const [syncingKey, setSyncingKey] = useState<string | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
+
+  const handleSyncOne = useCallback(
+    async (proc: ProcessoJudicial) => {
+      const key = `${proc.unidade}|${proc.nome}`;
+      setSyncingKey(key);
+      try {
+        const r = await consultarStatusProcesso({
+          unidade: proc.unidade,
+          nome: proc.nome,
+          numero_processo: proc.numero_processo,
+        });
+        await refreshProcessos();
+        toast({
+          title: "Status atualizado",
+          description:
+            r.consulta_status === "ok"
+              ? `Fase: ${r.fase_atual ?? "—"}`
+              : r.consulta_status === "nao_encontrado"
+              ? "Processo não encontrado no DataJud."
+              : `Erro: ${r.consulta_erro ?? "desconhecido"}`,
+        });
+      } catch (e) {
+        toast({
+          title: "Falha ao consultar",
+          description: e instanceof Error ? e.message : String(e),
+          variant: "destructive",
+        });
+      } finally {
+        setSyncingKey(null);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const handleSyncAll = useCallback(async () => {
+    setSyncingAll(true);
+    try {
+      const r = await sincronizarTodosProcessos();
+      await refreshProcessos();
+      toast({
+        title: "Sincronização concluída",
+        description: `${r.atualizados} atualizados · ${r.erros} erros (de ${r.total})`,
+      });
+    } catch (e) {
+      toast({
+        title: "Falha na sincronização",
+        description: e instanceof Error ? e.message : String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingAll(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const procMap = useMemo(() => indexByKey(processos), [processos]);
 
