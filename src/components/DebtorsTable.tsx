@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -18,10 +18,18 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronRight, Gavel, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
-import { countOverdueBoletos, isJudicial } from "@/lib/processosRepo";
+import {
+  countOverdueBoletos,
+  indexByKey,
+  isJudicial,
+  listProcessos,
+  type ProcessoJudicial,
+} from "@/lib/processosRepo";
 import { useJudicialSettings } from "@/lib/settings";
+import { ProcessoFormDialog } from "./ProcessoFormDialog";
 
 interface Props {
   debtors: Debtor[];
@@ -40,6 +48,22 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [internalMode, setInternalMode] = useState<Mode>("lista");
   const mode = modeProp ?? internalMode;
   const [selected, setSelected] = useState<Debtor | null>(null);
+  const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
+  const [editingProc, setEditingProc] = useState<Debtor | null>(null);
+
+  const procMap = useMemo(() => indexByKey(processos), [processos]);
+
+  const refreshProcessos = useCallback(async () => {
+    try {
+      setProcessos(await listProcessos());
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshProcessos();
+  }, [refreshProcessos]);
 
   const filtered = useMemo(() => {
     const min = parseFloat(minValue.replace(",", ".")) || 0;
