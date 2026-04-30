@@ -130,7 +130,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                         <Badge
                           variant="destructive"
                           className="gap-1 animate-pulse"
-                          title={`${overdueCount} boletos com mais de ${JUDICIAL_MIN_ATRASO_DIAS} dias — passível de cobrança judicial`}
+                          title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias — passível de cobrança judicial`}
                         >
                           <Gavel className="h-3 w-3" />
                           Judicial
