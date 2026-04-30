@@ -23,14 +23,19 @@ import { Debtor, formatBRL } from "@/lib/pdfParser";
 
 interface Props {
   debtors: Debtor[];
+  /** Quando informado, oculta as abas internas e usa este modo. */
+  mode?: Mode;
+  /** Quando true, oculta as abas internas (útil quando o pai controla o modo). */
+  hideTabs?: boolean;
 }
 
 type Mode = "lista" | "ranking";
 
-export function DebtorsTable({ debtors }: Props) {
+export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
-  const [mode, setMode] = useState<Mode>("lista");
+  const [internalMode, setInternalMode] = useState<Mode>("lista");
+  const mode = modeProp ?? internalMode;
   const [selected, setSelected] = useState<Debtor | null>(null);
 
   const filtered = useMemo(() => {
@@ -50,12 +55,16 @@ export function DebtorsTable({ debtors }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
-          <TabsList>
-            <TabsTrigger value="lista">Lista completa</TabsTrigger>
-            <TabsTrigger value="ranking">Ranking</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {hideTabs ? (
+          <div />
+        ) : (
+          <Tabs value={mode} onValueChange={(v) => setInternalMode(v as Mode)}>
+            <TabsList>
+              <TabsTrigger value="lista">Lista completa</TabsTrigger>
+              <TabsTrigger value="ranking">Ranking</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
         <div className="flex gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
