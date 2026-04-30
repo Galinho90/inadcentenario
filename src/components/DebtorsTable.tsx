@@ -55,6 +55,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
   const [syncingKey, setSyncingKey] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ done: 0, total: 0, ok: 0, erro: 0 });
 
   const handleSyncOne = useCallback(
     async (proc: ProcessoJudicial) => {
@@ -91,23 +92,36 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   );
 
   const handleSyncAll = useCallback(async () => {
-    setSyncingAll(true);
-    try {
-      const r = await sincronizarTodosProcessos();
-      await refreshProcessos();
-      toast({
-        title: "Sincronização concluída",
-        description: `${r.atualizados} atualizados · ${r.erros} erros (de ${r.total})`,
-      });
-    } catch (e) {
-      toast({
-        title: "Falha na sincronização",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
-    } finally {
-      setSyncingAll(false);
+    const lista = await listProcessos();
+    if (lista.length === 0) {
+      toast({ title: "Nada para sincronizar", description: "Nenhum processo cadastrado." });
+      return;
     }
+    setSyncingAll(true);
+    setSyncProgress({ done: 0, total: lista.length, ok: 0, erro: 0 });
+    let ok = 0;
+    let erro = 0;
+    for (let i = 0; i < lista.length; i++) {
+      const p = lista[i];
+      try {
+        const r = await consultarStatusProcesso({
+          unidade: p.unidade,
+          nome: p.nome,
+          numero_processo: p.numero_processo,
+        });
+        if (r.consulta_status === "ok") ok++;
+        else erro++;
+      } catch {
+        erro++;
+      }
+      setSyncProgress({ done: i + 1, total: lista.length, ok, erro });
+    }
+    await refreshProcessos();
+    setSyncingAll(false);
+    toast({
+      title: "Sincronização concluída",
+      description: `${ok} atualizados · ${erro} com problema (de ${lista.length})`,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
