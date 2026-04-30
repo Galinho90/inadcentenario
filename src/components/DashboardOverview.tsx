@@ -253,56 +253,6 @@ export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
         </Card>
       </div>
 
-      {/* Lista top 5 com barra de progresso */}
-      {top5.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Detalhamento dos maiores devedores</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-4">
-              {top5.map((d, i) => {
-                const pct = (d.total / maxTop) * 100;
-                const hasCritico = d.boletos.some((b) => b.atraso > 90);
-                return (
-                  <li
-                    key={`${d.unidade}-${d.nome}`}
-                    className={
-                      "group rounded-lg p-3 -mx-3 transition-colors " +
-                      (onDebtorClick
-                        ? "cursor-pointer hover:bg-accent/60"
-                        : "")
-                    }
-                    onClick={() => onDebtorClick?.(d)}
-                  >
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="font-mono text-xs w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-semibold">
-                          {i + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{d.nome}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Unidade <span className="font-mono">{d.unidade}</span> ·{" "}
-                            {d.boletos.length} boleto{d.boletos.length !== 1 && "s"}
-                            {hasCritico && (
-                              <span className="ml-2 text-destructive">• crítico</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="font-semibold tabular-nums shrink-0">
-                        {formatBRL(d.total)}
-                      </span>
-                    </div>
-                    <Progress value={pct} className="h-1.5" />
-                  </li>
-                );
-              })}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
