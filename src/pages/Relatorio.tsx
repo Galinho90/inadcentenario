@@ -59,6 +59,12 @@ const Relatorio = () => {
               </p>
             )}
           </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/configuracoes">
+              <Settings className="h-4 w-4 mr-1.5" />
+              Configurações
+            </Link>
+          </Button>
         </div>
       </header>
 
