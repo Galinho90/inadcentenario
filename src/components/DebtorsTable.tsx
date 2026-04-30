@@ -19,17 +19,20 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, RefreshCw } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
 import {
+  consultarStatusProcesso,
   countOverdueBoletos,
   indexByKey,
   isJudicial,
   listProcessos,
+  sincronizarTodosProcessos,
   type ProcessoJudicial,
 } from "@/lib/processosRepo";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   debtors: Debtor[];
