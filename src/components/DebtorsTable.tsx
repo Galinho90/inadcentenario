@@ -199,6 +199,27 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
         </div>
       </div>
 
+      {syncingAll && syncProgress.total > 0 && (
+        <div className="rounded-lg border bg-card p-3 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
+              Consultando DataJud (CNJ)…
+            </span>
+            <span className="font-mono text-xs text-muted-foreground">
+              {syncProgress.done} / {syncProgress.total}
+              {syncProgress.erro > 0 && (
+                <span className="ml-2 text-destructive">· {syncProgress.erro} erros</span>
+              )}
+            </span>
+          </div>
+          <Progress
+            value={(syncProgress.done / syncProgress.total) * 100}
+            className="h-2"
+          />
+        </div>
+      )}
+
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
