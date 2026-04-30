@@ -34,6 +34,7 @@ interface Props {
 type Mode = "lista" | "ranking";
 
 export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
+  const settings = useJudicialSettings();
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [internalMode, setInternalMode] = useState<Mode>("lista");
