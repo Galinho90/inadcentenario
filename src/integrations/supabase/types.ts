@@ -90,6 +90,36 @@ export type Database = {
           },
         ]
       }
+      processos_judiciais: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          numero_processo: string
+          observacoes: string | null
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          numero_processo: string
+          observacoes?: string | null
+          unidade: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          numero_processo?: string
+          observacoes?: string | null
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       relatorios: {
         Row: {
           created_at: string
