@@ -225,24 +225,86 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
         </div>
       </div>
 
-      {syncingAll && syncProgress.total > 0 && (
-        <div className="rounded-lg border bg-card p-3 space-y-2">
+      {(syncingAll || syncErrors.length > 0) && syncProgress.total > 0 && (
+        <div className="rounded-lg border bg-card p-3 space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
-              <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
-              Consultando DataJud (CNJ)…
+              {syncingAll ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
+                  Consultando DataJud (CNJ)…
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                  Sincronização concluída com {syncErrors.length}{" "}
+                  {syncErrors.length === 1 ? "problema" : "problemas"}
+                </>
+              )}
             </span>
-            <span className="font-mono text-xs text-muted-foreground">
-              {syncProgress.done} / {syncProgress.total}
+            <span className="font-mono text-xs text-muted-foreground flex items-center gap-2">
+              <span>{syncProgress.done} / {syncProgress.total}</span>
               {syncProgress.erro > 0 && (
-                <span className="ml-2 text-destructive">· {syncProgress.erro} erros</span>
+                <span className="text-destructive">· {syncProgress.erro} erros</span>
+              )}
+              {!syncingAll && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    setSyncErrors([]);
+                    setSyncProgress({ done: 0, total: 0, ok: 0, erro: 0 });
+                  }}
+                >
+                  Fechar
+                </Button>
               )}
             </span>
           </div>
-          <Progress
-            value={(syncProgress.done / syncProgress.total) * 100}
-            className="h-2"
-          />
+          {syncingAll && (
+            <Progress
+              value={(syncProgress.done / syncProgress.total) * 100}
+              className="h-2"
+            />
+          )}
+          {syncErrors.length > 0 && (
+            <Accordion type="single" collapsible defaultValue={!syncingAll ? "errors" : undefined}>
+              <AccordionItem value="errors" className="border-0">
+                <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                  Ver {syncErrors.length}{" "}
+                  {syncErrors.length === 1 ? "erro" : "erros"} detalhado(s)
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ScrollArea className="max-h-64">
+                    <ul className="space-y-2 pr-3">
+                      {syncErrors.map((e, idx) => (
+                        <li
+                          key={`${e.unidade}-${e.nome}-${idx}`}
+                          className="rounded-md border border-destructive/20 bg-destructive/5 p-2 text-xs space-y-1"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              variant={e.status === "nao_encontrado" ? "secondary" : "destructive"}
+                              className="text-[10px]"
+                            >
+                              {e.status === "nao_encontrado" ? "não encontrado" : "erro"}
+                            </Badge>
+                            <span className="font-medium text-foreground">{e.nome}</span>
+                            <span className="text-muted-foreground">· un. {e.unidade}</span>
+                          </div>
+                          <div className="font-mono text-[11px] text-muted-foreground">
+                            {e.numero_processo}
+                          </div>
+                          <div className="text-foreground/80 break-words">{e.mensagem}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
         </div>
       )}
 
