@@ -160,7 +160,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
             <ul className="space-y-2">
               {elegiveis.map((d) => {
                 const proc = map.get(`${d.unidade}|${d.nome}`);
-                const overdue = countOverdueBoletos(d);
+                const overdue = countOverdueBoletos(d, settings.minAtrasoDias);
                 return (
                   <li
                     key={`${d.unidade}-${d.nome}`}
@@ -173,7 +173,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
                         </span>
                         <span className="font-medium truncate">{d.nome}</span>
                         <Badge variant="outline" className="text-xs">
-                          {overdue} boletos +{JUDICIAL_MIN_ATRASO_DIAS}d
+                          {overdue} boletos +{settings.minAtrasoDias}d
                         </Badge>
                       </div>
                       {proc ? (
