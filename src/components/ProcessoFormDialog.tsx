@@ -135,6 +135,23 @@ export function ProcessoFormDialog({
                   rows={3}
                 />
               </div>
+              <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3">
+                <Checkbox
+                  id="proc-eproc"
+                  checked={migradoEproc}
+                  onCheckedChange={(v) => setMigradoEproc(v === true)}
+                  className="mt-0.5"
+                />
+                <div className="space-y-1 leading-none">
+                  <Label htmlFor="proc-eproc" className="cursor-pointer">
+                    Processo migrado para o e-Proc
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Marque se este processo já foi migrado. Não será consultado
+                    automaticamente no DataJud (CNJ).
+                  </p>
+                </div>
+              </div>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
