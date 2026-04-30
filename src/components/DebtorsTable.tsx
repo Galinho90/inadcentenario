@@ -388,20 +388,54 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                             </Badge>
                           </div>
                           {ativo ? (
-                            <p className="text-sm text-muted-foreground">
-                              Processo:{" "}
-                              <strong className="font-mono text-foreground">
-                                {proc!.numero_processo}
-                              </strong>
-                              {proc!.observacoes && (
-                                <>
-                                  <br />
-                                  <span className="text-xs">
-                                    {proc!.observacoes}
+                            <div className="text-sm space-y-2">
+                              <p className="text-muted-foreground">
+                                Processo:{" "}
+                                <strong className="font-mono text-foreground">
+                                  {proc!.numero_processo}
+                                </strong>
+                                {proc!.tribunal && (
+                                  <span className="ml-2 text-xs">
+                                    ({proc!.tribunal})
                                   </span>
-                                </>
+                                )}
+                              </p>
+                              <div className="rounded-md border border-border/50 bg-background/50 p-3 space-y-1">
+                                <div className="text-xs font-medium text-muted-foreground">
+                                  Status processual (DataJud)
+                                </div>
+                                <div className="text-sm">
+                                  {proc!.fase_atual ? (
+                                    <strong className="text-foreground">
+                                      {proc!.fase_atual}
+                                    </strong>
+                                  ) : proc!.consulta_status === "nao_encontrado" ? (
+                                    <span className="text-muted-foreground italic">
+                                      Não encontrado no DataJud
+                                    </span>
+                                  ) : proc!.consulta_status === "erro" ? (
+                                    <span className="text-destructive italic text-xs">
+                                      Erro: {proc!.consulta_erro}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground italic">
+                                      Nunca consultado
+                                    </span>
+                                  )}
+                                </div>
+                                {proc!.ultima_consulta && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Última consulta:{" "}
+                                    {new Date(proc!.ultima_consulta).toLocaleString("pt-BR")}
+                                  </div>
+                                )}
+                              </div>
+                              {proc!.observacoes && (
+                                <p className="text-xs text-muted-foreground">
+                                  {proc!.observacoes}
+                                </p>
                               )}
-                            </p>
+                            </div>
                           ) : (
                             <p className="text-sm text-muted-foreground">
                               Este morador atende ao critério para cobrança
@@ -409,19 +443,39 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                               marcá-lo como <strong>Judicial</strong>.
                             </p>
                           )}
-                          <Button
-                            size="sm"
-                            variant={ativo ? "outline" : "default"}
-                            className={
-                              ativo
-                                ? ""
-                                : "bg-warning text-warning-foreground hover:bg-warning/90"
-                            }
-                            onClick={() => setEditingProc(selected)}
-                          >
-                            <Scale className="h-3.5 w-3.5 mr-1.5" />
-                            {ativo ? "Editar processo" : "Adicionar processo"}
-                          </Button>
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant={ativo ? "outline" : "default"}
+                              className={
+                                ativo
+                                  ? ""
+                                  : "bg-warning text-warning-foreground hover:bg-warning/90"
+                              }
+                              onClick={() => setEditingProc(selected)}
+                            >
+                              <Scale className="h-3.5 w-3.5 mr-1.5" />
+                              {ativo ? "Editar processo" : "Adicionar processo"}
+                            </Button>
+                            {ativo && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={syncingKey === `${proc!.unidade}|${proc!.nome}`}
+                                onClick={() => handleSyncOne(proc!)}
+                              >
+                                <RefreshCw
+                                  className={
+                                    "h-3.5 w-3.5 mr-1.5 " +
+                                    (syncingKey === `${proc!.unidade}|${proc!.nome}`
+                                      ? "animate-spin"
+                                      : "")
+                                  }
+                                />
+                                Atualizar status
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
