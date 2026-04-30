@@ -20,12 +20,11 @@ import {
   deleteProcesso,
   indexByKey,
   isJudicial,
-  JUDICIAL_MIN_ATRASO_DIAS,
-  JUDICIAL_MIN_BOLETOS,
   listProcessos,
   upsertProcesso,
   type ProcessoJudicial,
 } from "@/lib/processosRepo";
+import { useJudicialSettings } from "@/lib/settings";
 import { toast } from "sonner";
 
 interface Props {
