@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -15,11 +16,10 @@ import { formatBRL } from "@/lib/pdfParser";
 import { toast } from "sonner";
 
 interface Props {
-  onOpen: (id: string) => void;
   refreshKey: number;
 }
 
-export function ReportsHistory({ onOpen, refreshKey }: Props) {
+export function ReportsHistory({ refreshKey }: Props) {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -103,10 +103,12 @@ export function ReportsHistory({ onOpen, refreshKey }: Props) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onOpen(r.id)}
+                    asChild
                     title="Abrir"
                   >
-                    <Eye className="h-4 w-4" />
+                    <Link to={`/relatorio/${r.id}`}>
+                      <Eye className="h-4 w-4" />
+                    </Link>
                   </Button>
                   <Button
                     variant="ghost"
