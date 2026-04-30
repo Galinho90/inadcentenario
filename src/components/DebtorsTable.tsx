@@ -182,7 +182,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
 
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4 space-y-4">
-                  {isJudicial(selected) && (
+                  {isJudicial(selected, settings) && (
                     <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                       <div className="rounded-full bg-destructive/20 p-2">
                         <Gavel className="h-5 w-5 text-destructive" />
@@ -194,15 +194,17 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           </h4>
                           <Badge variant="destructive" className="gap-1">
                             <AlertTriangle className="h-3 w-3" />
-                            {countOverdueBoletos(selected)} boletos +
-                            {JUDICIAL_MIN_ATRASO_DIAS}d
+                            {countOverdueBoletos(selected, settings.minAtrasoDias)} boletos +
+                            {settings.minAtrasoDias}d
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           Este morador acumula{" "}
-                          <strong>{countOverdueBoletos(selected)}</strong> boletos
-                          com mais de {JUDICIAL_MIN_ATRASO_DIAS} dias de atraso,
-                          totalizando{" "}
+                          <strong>
+                            {countOverdueBoletos(selected, settings.minAtrasoDias)}
+                          </strong>{" "}
+                          boletos com mais de {settings.minAtrasoDias} dias de
+                          atraso, totalizando{" "}
                           <strong className="text-foreground">
                             {formatBRL(selected.total)}
                           </strong>
