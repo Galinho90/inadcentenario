@@ -18,8 +18,10 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronRight } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
+
+const JUDICIAL_THRESHOLD = 3;
 
 interface Props {
   debtors: Debtor[];
