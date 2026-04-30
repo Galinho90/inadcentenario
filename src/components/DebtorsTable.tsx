@@ -19,7 +19,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, RefreshCw } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, RefreshCw, ExternalLink } from "lucide-react";
+import { getTribunalLink } from "@/lib/tribunalLinks";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
 import {
   consultarStatusProcesso,
@@ -637,6 +638,23 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                 Atualizar status
                               </Button>
                             )}
+                            {(() => {
+                              const link = getTribunalLink(proc!.numero_processo);
+                              if (!link) return null;
+                              return (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                  title="Abrir consulta pública no portal do tribunal (peças/documentos exigem login)"
+                                >
+                                  <a href={link.url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                                    {link.label}
+                                  </a>
+                                </Button>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
