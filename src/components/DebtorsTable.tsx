@@ -638,7 +638,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                 Atualizar status
                               </Button>
                             )}
-                            {(() => {
+                            {ativo && (() => {
                               const link = getTribunalLink(proc!.numero_processo);
                               if (!link) return null;
                               return (
