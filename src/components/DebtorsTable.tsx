@@ -185,7 +185,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
 
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4 space-y-4">
-                  {selected.boletos.length >= JUDICIAL_THRESHOLD && (
+                  {isJudicial(selected) && (
                     <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                       <div className="rounded-full bg-destructive/20 p-2">
                         <Gavel className="h-5 w-5 text-destructive" />
@@ -197,7 +197,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           </h4>
                           <Badge variant="destructive" className="gap-1">
                             <AlertTriangle className="h-3 w-3" />
-                            {selected.boletos.length} boletos em atraso
+                            {countOverdueBoletos(selected)} boletos +
+                            {JUDICIAL_MIN_ATRASO_DIAS}d
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
