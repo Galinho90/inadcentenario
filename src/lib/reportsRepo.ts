@@ -86,6 +86,21 @@ export async function listReports(): Promise<ReportSummary[]> {
   }));
 }
 
+/** Retorna o último relatório salvo (mais recente) ou null se não houver. */
+export async function loadLatestReport(): Promise<
+  { summary: ReportSummary; debtors: Debtor[] } | null
+> {
+  const { data, error } = await supabase
+    .from("relatorios")
+    .select("id")
+    .order("processado_em", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return loadReport(data.id);
+}
+
 export async function loadReport(
   id: string
 ): Promise<{ summary: ReportSummary; debtors: Debtor[] }> {
