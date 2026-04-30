@@ -239,6 +239,24 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           <span className="font-mono text-xs text-muted-foreground">
                             {proc!.numero_processo}
                           </span>
+                          {proc!.fase_atual && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-normal"
+                              title={
+                                proc!.ultima_consulta
+                                  ? `Atualizado em ${new Date(proc!.ultima_consulta).toLocaleString("pt-BR")}`
+                                  : undefined
+                              }
+                            >
+                              {proc!.fase_atual}
+                            </Badge>
+                          )}
+                          {proc!.tribunal && (
+                            <span className="text-xs text-muted-foreground">
+                              {proc!.tribunal}
+                            </span>
+                          )}
                         </>
                       )}
                       {podeCobrar && (
