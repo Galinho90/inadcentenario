@@ -18,8 +18,10 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronRight } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
+
+const JUDICIAL_THRESHOLD = 3;
 
 interface Props {
   debtors: Debtor[];
@@ -106,17 +108,38 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((d, i) => (
+              filtered.map((d, i) => {
+                const judicial = d.boletos.length >= JUDICIAL_THRESHOLD;
+                return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
-                  className="cursor-pointer hover:bg-accent/60"
+                  className={
+                    "cursor-pointer hover:bg-accent/60 " +
+                    (judicial ? "bg-destructive/5 hover:bg-destructive/10" : "")
+                  }
                   onClick={() => setSelected(d)}
                 >
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="font-mono">{d.unidade}</TableCell>
-                  <TableCell>{d.nome}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{d.nome}</span>
+                      {judicial && (
+                        <Badge
+                          variant="destructive"
+                          className="gap-1 animate-pulse"
+                          title={`${d.boletos.length} boletos atrasados — passível de cobrança judicial`}
+                        >
+                          <Gavel className="h-3 w-3" />
+                          Judicial
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="secondary">{d.boletos.length}</Badge>
+                    <Badge variant={judicial ? "destructive" : "secondary"}>
+                      {d.boletos.length}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatBRL(d.total)}
@@ -125,7 +148,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                     <ChevronRight className="h-4 w-4" />
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -155,7 +179,34 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               </DialogHeader>
 
               <ScrollArea className="max-h-[60vh]">
-                <div className="p-6 pt-4">
+                <div className="p-6 pt-4 space-y-4">
+                  {selected.boletos.length >= JUDICIAL_THRESHOLD && (
+                    <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                      <div className="rounded-full bg-destructive/20 p-2">
+                        <Gavel className="h-5 w-5 text-destructive" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-destructive">
+                            Passível de cobrança judicial
+                          </h4>
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {selected.boletos.length} boletos em atraso
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Este morador acumula <strong>{selected.boletos.length}</strong>{" "}
+                          boletos em atraso, totalizando{" "}
+                          <strong className="text-foreground">
+                            {formatBRL(selected.total)}
+                          </strong>
+                          . Recomenda-se o encaminhamento para cobrança judicial
+                          conforme convenção do condomínio.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {selected.boletos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
                       Nenhum boleto detalhado encontrado para este morador.
