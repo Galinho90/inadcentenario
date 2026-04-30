@@ -380,7 +380,15 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           <span className="font-mono text-xs text-muted-foreground">
                             {proc!.numero_processo}
                           </span>
-                          {proc!.fase_atual && (
+                          {proc!.migrado_eproc ? (
+                            <Badge
+                              variant="outline"
+                              className="text-xs font-normal border-primary/40 text-primary"
+                              title="Processo migrado para o e-Proc — não consultado no DataJud"
+                            >
+                              e-Proc
+                            </Badge>
+                          ) : proc!.fase_atual ? (
                             <Badge
                               variant="secondary"
                               className="text-xs font-normal"
@@ -392,7 +400,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                             >
                               {proc!.fase_atual}
                             </Badge>
-                          )}
+                          ) : null}
                           {proc!.tribunal && (
                             <span className="text-xs text-muted-foreground">
                               {proc!.tribunal}
