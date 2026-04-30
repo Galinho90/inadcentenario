@@ -179,7 +179,34 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               </DialogHeader>
 
               <ScrollArea className="max-h-[60vh]">
-                <div className="p-6 pt-4">
+                <div className="p-6 pt-4 space-y-4">
+                  {selected.boletos.length >= JUDICIAL_THRESHOLD && (
+                    <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                      <div className="rounded-full bg-destructive/20 p-2">
+                        <Gavel className="h-5 w-5 text-destructive" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-destructive">
+                            Passível de cobrança judicial
+                          </h4>
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {selected.boletos.length} boletos em atraso
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Este morador acumula <strong>{selected.boletos.length}</strong>{" "}
+                          boletos em atraso, totalizando{" "}
+                          <strong className="text-foreground">
+                            {formatBRL(selected.total)}
+                          </strong>
+                          . Recomenda-se o encaminhamento para cobrança judicial
+                          conforme convenção do condomínio.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {selected.boletos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
                       Nenhum boleto detalhado encontrado para este morador.
