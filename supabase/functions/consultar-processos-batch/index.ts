@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { consultarDataJud } from "../consultar-processo/index.ts";
+import { consultarDataJud } from "../_shared/datajud.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +39,6 @@ Deno.serve(async (req) => {
 
     let atualizados = 0;
     let erros = 0;
-    const detalhes: any[] = [];
 
     for (const p of processos ?? []) {
       const result = await consultarDataJud(p.numero_processo, apiKey);
@@ -59,17 +58,16 @@ Deno.serve(async (req) => {
       } else {
         atualizados++;
       }
-      detalhes.push({
-        unidade: p.unidade,
-        nome: p.nome,
-        ...result,
-      });
-      // delay leve para não saturar
       await new Promise((r) => setTimeout(r, 200));
     }
 
     return new Response(
-      JSON.stringify({ ok: true, total: processos?.length ?? 0, atualizados, erros, detalhes }),
+      JSON.stringify({
+        ok: true,
+        total: processos?.length ?? 0,
+        atualizados,
+        erros,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
