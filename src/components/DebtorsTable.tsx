@@ -19,7 +19,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, RefreshCw } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, RefreshCw, ExternalLink } from "lucide-react";
+import { getTribunalLink } from "@/lib/tribunalLinks";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
 import {
   consultarStatusProcesso,
