@@ -1,7 +1,1 @@
 project_id = "zwngrpxfrrocpdsicinb"
-
-[functions.consultar-processo]
-verify_jwt = false
-
-[functions.consultar-processos-batch]
-verify_jwt = false

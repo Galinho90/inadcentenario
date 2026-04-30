@@ -19,11 +19,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, RefreshCw, ExternalLink } from "lucide-react";
-import { getTribunalLink } from "@/lib/tribunalLinks";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
 import {
-  consultarStatusProcesso,
   countOverdueBoletos,
   indexByKey,
   isJudicial,
@@ -32,14 +30,6 @@ import {
 } from "@/lib/processosRepo";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
-import { Progress } from "@/components/ui/progress";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { toast } from "@/hooks/use-toast";
 
 interface Props {
   debtors: Debtor[];
@@ -60,113 +50,6 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [selected, setSelected] = useState<Debtor | null>(null);
   const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
-  const [syncingKey, setSyncingKey] = useState<string | null>(null);
-  const [syncingAll, setSyncingAll] = useState(false);
-  const [syncProgress, setSyncProgress] = useState({ done: 0, total: 0, ok: 0, erro: 0 });
-  const [syncErrors, setSyncErrors] = useState<
-    Array<{ unidade: string; nome: string; numero_processo: string; status: string; mensagem: string }>
-  >([]);
-
-  const handleSyncOne = useCallback(
-    async (proc: ProcessoJudicial) => {
-      const key = `${proc.unidade}|${proc.nome}`;
-      setSyncingKey(key);
-      try {
-        const r = await consultarStatusProcesso({
-          unidade: proc.unidade,
-          nome: proc.nome,
-          numero_processo: proc.numero_processo,
-        });
-        await refreshProcessos();
-        toast({
-          title: "Status atualizado",
-          description:
-            r.consulta_status === "ok"
-              ? `Fase: ${r.fase_atual ?? "—"}`
-              : r.consulta_status === "nao_encontrado"
-              ? "Processo não encontrado no DataJud."
-              : `Erro: ${r.consulta_erro ?? "desconhecido"}`,
-        });
-      } catch (e) {
-        toast({
-          title: "Falha ao consultar",
-          description: e instanceof Error ? e.message : String(e),
-          variant: "destructive",
-        });
-      } finally {
-        setSyncingKey(null);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-
-  const handleSyncAll = useCallback(async () => {
-    const todos = await listProcessos();
-    const lista = todos.filter((p) => !p.migrado_eproc);
-    const pulados = todos.length - lista.length;
-    if (lista.length === 0) {
-      toast({
-        title: "Nada para sincronizar",
-        description:
-          todos.length === 0
-            ? "Nenhum processo cadastrado."
-            : `Todos os ${todos.length} processos estão marcados como e-Proc.`,
-      });
-      return;
-    }
-    setSyncingAll(true);
-    setSyncProgress({ done: 0, total: lista.length, ok: 0, erro: 0 });
-    setSyncErrors([]);
-    let ok = 0;
-    let erro = 0;
-    const erros: Array<{ unidade: string; nome: string; numero_processo: string; status: string; mensagem: string }> = [];
-    for (let i = 0; i < lista.length; i++) {
-      const p = lista[i];
-      try {
-        const r = await consultarStatusProcesso({
-          unidade: p.unidade,
-          nome: p.nome,
-          numero_processo: p.numero_processo,
-        });
-        if (r.consulta_status === "ok") {
-          ok++;
-        } else {
-          erro++;
-          erros.push({
-            unidade: p.unidade,
-            nome: p.nome,
-            numero_processo: p.numero_processo,
-            status: r.consulta_status,
-            mensagem:
-              r.consulta_status === "nao_encontrado"
-                ? "Processo não encontrado no DataJud"
-                : r.consulta_erro ?? "Erro desconhecido",
-          });
-        }
-      } catch (e) {
-        erro++;
-        erros.push({
-          unidade: p.unidade,
-          nome: p.nome,
-          numero_processo: p.numero_processo,
-          status: "erro",
-          mensagem: e instanceof Error ? e.message : String(e),
-        });
-      }
-      setSyncProgress({ done: i + 1, total: lista.length, ok, erro });
-      setSyncErrors([...erros]);
-    }
-    await refreshProcessos();
-    setSyncingAll(false);
-    toast({
-      title: "Sincronização concluída",
-      description:
-        `${ok} atualizados · ${erro} com problema (de ${lista.length})` +
-        (pulados > 0 ? ` · ${pulados} ignorados (e-Proc)` : ""),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const procMap = useMemo(() => indexByKey(processos), [processos]);
 
@@ -210,18 +93,6 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
           </Tabs>
         )}
         <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSyncAll}
-            disabled={syncingAll || processos.length === 0}
-            title="Consultar status de todos os processos no DataJud (CNJ)"
-          >
-            <RefreshCw className={"h-3.5 w-3.5 mr-1.5 " + (syncingAll ? "animate-spin" : "")} />
-            {syncingAll
-              ? `Sincronizando ${syncProgress.done}/${syncProgress.total}...`
-              : "Sincronizar processos"}
-          </Button>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -241,89 +112,6 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
           />
         </div>
       </div>
-
-      {(syncingAll || syncErrors.length > 0) && syncProgress.total > 0 && (
-        <div className="rounded-lg border bg-card p-3 space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2">
-              {syncingAll ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
-                  Consultando DataJud (CNJ)…
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                  Sincronização concluída com {syncErrors.length}{" "}
-                  {syncErrors.length === 1 ? "problema" : "problemas"}
-                </>
-              )}
-            </span>
-            <span className="font-mono text-xs text-muted-foreground flex items-center gap-2">
-              <span>{syncProgress.done} / {syncProgress.total}</span>
-              {syncProgress.erro > 0 && (
-                <span className="text-destructive">· {syncProgress.erro} erros</span>
-              )}
-              {!syncingAll && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-xs"
-                  onClick={() => {
-                    setSyncErrors([]);
-                    setSyncProgress({ done: 0, total: 0, ok: 0, erro: 0 });
-                  }}
-                >
-                  Fechar
-                </Button>
-              )}
-            </span>
-          </div>
-          {syncingAll && (
-            <Progress
-              value={(syncProgress.done / syncProgress.total) * 100}
-              className="h-2"
-            />
-          )}
-          {syncErrors.length > 0 && (
-            <Accordion type="single" collapsible defaultValue={!syncingAll ? "errors" : undefined}>
-              <AccordionItem value="errors" className="border-0">
-                <AccordionTrigger className="py-2 text-sm hover:no-underline">
-                  Ver {syncErrors.length}{" "}
-                  {syncErrors.length === 1 ? "erro" : "erros"} detalhado(s)
-                </AccordionTrigger>
-                <AccordionContent>
-                  <ScrollArea className="max-h-64">
-                    <ul className="space-y-2 pr-3">
-                      {syncErrors.map((e, idx) => (
-                        <li
-                          key={`${e.unidade}-${e.nome}-${idx}`}
-                          className="rounded-md border border-destructive/20 bg-destructive/5 p-2 text-xs space-y-1"
-                        >
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge
-                              variant={e.status === "nao_encontrado" ? "secondary" : "destructive"}
-                              className="text-[10px]"
-                            >
-                              {e.status === "nao_encontrado" ? "não encontrado" : "erro"}
-                            </Badge>
-                            <span className="font-medium text-foreground">{e.nome}</span>
-                            <span className="text-muted-foreground">· un. {e.unidade}</span>
-                          </div>
-                          <div className="font-mono text-[11px] text-muted-foreground">
-                            {e.numero_processo}
-                          </div>
-                          <div className="text-foreground/80 break-words">{e.mensagem}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </ScrollArea>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          )}
-        </div>
-      )}
 
       <div className="rounded-lg border bg-card">
         <Table>
@@ -381,32 +169,6 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           <span className="font-mono text-xs text-muted-foreground">
                             {proc!.numero_processo}
                           </span>
-                          {proc!.migrado_eproc ? (
-                            <Badge
-                              variant="outline"
-                              className="text-xs font-normal border-primary/40 text-primary"
-                              title="Processo migrado para o e-Proc — não consultado no DataJud"
-                            >
-                              e-Proc
-                            </Badge>
-                          ) : proc!.fase_atual ? (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs font-normal"
-                              title={
-                                proc!.ultima_consulta
-                                  ? `Atualizado em ${new Date(proc!.ultima_consulta).toLocaleString("pt-BR")}`
-                                  : undefined
-                              }
-                            >
-                              {proc!.fase_atual}
-                            </Badge>
-                          ) : null}
-                          {proc!.tribunal && (
-                            <span className="text-xs text-muted-foreground">
-                              {proc!.tribunal}
-                            </span>
-                          )}
                         </>
                       )}
                       {podeCobrar && (
@@ -544,55 +306,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                 <strong className="font-mono text-foreground">
                                   {proc!.numero_processo}
                                 </strong>
-                                {proc!.tribunal && (
-                                  <span className="ml-2 text-xs">
-                                    ({proc!.tribunal})
-                                  </span>
-                                )}
                               </p>
-                              <div className="rounded-md border border-border/50 bg-background/50 p-3 space-y-1">
-                                <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                                  Status processual (DataJud)
-                                  {proc!.migrado_eproc && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[10px] border-primary/40 text-primary"
-                                    >
-                                      e-Proc
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="text-sm">
-                                  {proc!.migrado_eproc ? (
-                                    <span className="text-muted-foreground italic">
-                                      Processo no e-Proc — consulta automática desativada.
-                                      Verifique o status no portal do tribunal.
-                                    </span>
-                                  ) : proc!.fase_atual ? (
-                                    <strong className="text-foreground">
-                                      {proc!.fase_atual}
-                                    </strong>
-                                  ) : proc!.consulta_status === "nao_encontrado" ? (
-                                    <span className="text-muted-foreground italic">
-                                      Não encontrado no DataJud
-                                    </span>
-                                  ) : proc!.consulta_status === "erro" ? (
-                                    <span className="text-destructive italic text-xs">
-                                      Erro: {proc!.consulta_erro}
-                                    </span>
-                                  ) : (
-                                    <span className="text-muted-foreground italic">
-                                      Nunca consultado
-                                    </span>
-                                  )}
-                                </div>
-                                {proc!.ultima_consulta && !proc!.migrado_eproc && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Última consulta:{" "}
-                                    {new Date(proc!.ultima_consulta).toLocaleString("pt-BR")}
-                                  </div>
-                                )}
-                              </div>
                               {proc!.observacoes && (
                                 <p className="text-xs text-muted-foreground">
                                   {proc!.observacoes}
@@ -620,41 +334,6 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                               <Scale className="h-3.5 w-3.5 mr-1.5" />
                               {ativo ? "Editar processo" : "Adicionar processo"}
                             </Button>
-                            {ativo && !proc!.migrado_eproc && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={syncingKey === `${proc!.unidade}|${proc!.nome}`}
-                                onClick={() => handleSyncOne(proc!)}
-                              >
-                                <RefreshCw
-                                  className={
-                                    "h-3.5 w-3.5 mr-1.5 " +
-                                    (syncingKey === `${proc!.unidade}|${proc!.nome}`
-                                      ? "animate-spin"
-                                      : "")
-                                  }
-                                />
-                                Atualizar status
-                              </Button>
-                            )}
-                            {ativo && (() => {
-                              const link = getTribunalLink(proc!.numero_processo);
-                              if (!link) return null;
-                              return (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  asChild
-                                  title="Abrir consulta pública no portal do tribunal (peças/documentos exigem login)"
-                                >
-                                  <a href={link.url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                                    {link.label}
-                                  </a>
-                                </Button>
-                              );
-                            })()}
                           </div>
                         </div>
                       </div>
