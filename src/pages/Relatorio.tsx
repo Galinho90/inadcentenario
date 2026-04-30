@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { StatsCards } from "@/components/StatsCards";
+import { DashboardOverview } from "@/components/DashboardOverview";
 import { DebtorsTable } from "@/components/DebtorsTable";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { loadReport, type ReportSummary } from "@/lib/reportsRepo";
-import { formatBRL, type Debtor } from "@/lib/pdfParser";
+import { type Debtor } from "@/lib/pdfParser";
 import { toast } from "sonner";
 
 const Relatorio = () => {
@@ -80,7 +79,7 @@ const Relatorio = () => {
           </Alert>
         ) : (
           <>
-            <StatsCards total={total} count={debtors.length} />
+            <DashboardOverview debtors={debtors} fileName={summary?.nome_arquivo} />
 
             <Tabs value={tab} onValueChange={(v) => setTab(v as "lista" | "ranking")}>
               <TabsList>
@@ -95,41 +94,7 @@ const Relatorio = () => {
                 <DebtorsTable debtors={debtors} mode="lista" hideTabs />
               </TabsContent>
 
-              <TabsContent value="ranking" className="mt-6 space-y-6">
-                {top5.length > 0 && (
-                  <Card>
-                    <CardHeader className="flex flex-row items-center gap-2 pb-3">
-                      <Trophy className="h-4 w-4 text-primary" />
-                      <CardTitle className="text-base">
-                        Top 5 maiores devedores
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ol className="space-y-2">
-                        {top5.map((d, i) => (
-                          <li
-                            key={`${d.unidade}-${d.nome}`}
-                            className="flex items-center justify-between gap-3 text-sm border-b last:border-0 pb-2 last:pb-0"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <span className="font-mono text-xs w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0">
-                                {i + 1}
-                              </span>
-                              <span className="font-mono text-muted-foreground">
-                                {d.unidade}
-                              </span>
-                              <span className="truncate">{d.nome}</span>
-                            </div>
-                            <span className="font-medium shrink-0">
-                              {formatBRL(d.total)}
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
-                    </CardContent>
-                  </Card>
-                )}
-
+              <TabsContent value="ranking" className="mt-6">
                 <DebtorsTable debtors={debtors} mode="ranking" hideTabs />
               </TabsContent>
             </Tabs>
