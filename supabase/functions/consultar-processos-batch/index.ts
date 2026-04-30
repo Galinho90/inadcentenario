@@ -28,7 +28,8 @@ Deno.serve(async (req) => {
 
     const { data: processos, error } = await supabase
       .from("processos_judiciais")
-      .select("unidade, nome, numero_processo");
+      .select("unidade, nome, numero_processo")
+      .eq("migrado_eproc", false);
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {

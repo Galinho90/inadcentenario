@@ -101,9 +101,17 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   );
 
   const handleSyncAll = useCallback(async () => {
-    const lista = await listProcessos();
+    const todos = await listProcessos();
+    const lista = todos.filter((p) => !p.migrado_eproc);
+    const pulados = todos.length - lista.length;
     if (lista.length === 0) {
-      toast({ title: "Nada para sincronizar", description: "Nenhum processo cadastrado." });
+      toast({
+        title: "Nada para sincronizar",
+        description:
+          todos.length === 0
+            ? "Nenhum processo cadastrado."
+            : `Todos os ${todos.length} processos estão marcados como e-Proc.`,
+      });
       return;
     }
     setSyncingAll(true);
@@ -152,7 +160,9 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
     setSyncingAll(false);
     toast({
       title: "Sincronização concluída",
-      description: `${ok} atualizados · ${erro} com problema (de ${lista.length})`,
+      description:
+        `${ok} atualizados · ${erro} com problema (de ${lista.length})` +
+        (pulados > 0 ? ` · ${pulados} ignorados (e-Proc)` : ""),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -370,7 +380,15 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           <span className="font-mono text-xs text-muted-foreground">
                             {proc!.numero_processo}
                           </span>
-                          {proc!.fase_atual && (
+                          {proc!.migrado_eproc ? (
+                            <Badge
+                              variant="outline"
+                              className="text-xs font-normal border-primary/40 text-primary"
+                              title="Processo migrado para o e-Proc — não consultado no DataJud"
+                            >
+                              e-Proc
+                            </Badge>
+                          ) : proc!.fase_atual ? (
                             <Badge
                               variant="secondary"
                               className="text-xs font-normal"
@@ -382,7 +400,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                             >
                               {proc!.fase_atual}
                             </Badge>
-                          )}
+                          ) : null}
                           {proc!.tribunal && (
                             <span className="text-xs text-muted-foreground">
                               {proc!.tribunal}
@@ -532,11 +550,24 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                 )}
                               </p>
                               <div className="rounded-md border border-border/50 bg-background/50 p-3 space-y-1">
-                                <div className="text-xs font-medium text-muted-foreground">
+                                <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                                   Status processual (DataJud)
+                                  {proc!.migrado_eproc && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] border-primary/40 text-primary"
+                                    >
+                                      e-Proc
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="text-sm">
-                                  {proc!.fase_atual ? (
+                                  {proc!.migrado_eproc ? (
+                                    <span className="text-muted-foreground italic">
+                                      Processo no e-Proc — consulta automática desativada.
+                                      Verifique o status no portal do tribunal.
+                                    </span>
+                                  ) : proc!.fase_atual ? (
                                     <strong className="text-foreground">
                                       {proc!.fase_atual}
                                     </strong>
@@ -554,7 +585,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                     </span>
                                   )}
                                 </div>
-                                {proc!.ultima_consulta && (
+                                {proc!.ultima_consulta && !proc!.migrado_eproc && (
                                   <div className="text-xs text-muted-foreground">
                                     Última consulta:{" "}
                                     {new Date(proc!.ultima_consulta).toLocaleString("pt-BR")}
@@ -588,7 +619,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                               <Scale className="h-3.5 w-3.5 mr-1.5" />
                               {ativo ? "Editar processo" : "Adicionar processo"}
                             </Button>
-                            {ativo && (
+                            {ativo && !proc!.migrado_eproc && (
                               <Button
                                 size="sm"
                                 variant="outline"

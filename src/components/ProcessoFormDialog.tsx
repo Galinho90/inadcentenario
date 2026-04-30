@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
   deleteProcesso,
@@ -37,12 +38,14 @@ export function ProcessoFormDialog({
 }: Props) {
   const [numero, setNumero] = useState("");
   const [obs, setObs] = useState("");
+  const [migradoEproc, setMigradoEproc] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setNumero(existing?.numero_processo ?? "");
       setObs(existing?.observacoes ?? "");
+      setMigradoEproc(existing?.migrado_eproc ?? false);
     }
   }, [open, existing]);
 
@@ -64,6 +67,7 @@ export function ProcessoFormDialog({
         nome: debtor.nome,
         numero_processo: trimmed,
         observacoes: obs.trim().slice(0, 500) || null,
+        migrado_eproc: migradoEproc,
       });
       toast.success("Processo registrado");
       onOpenChange(false);
@@ -130,6 +134,23 @@ export function ProcessoFormDialog({
                   maxLength={500}
                   rows={3}
                 />
+              </div>
+              <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3">
+                <Checkbox
+                  id="proc-eproc"
+                  checked={migradoEproc}
+                  onCheckedChange={(v) => setMigradoEproc(v === true)}
+                  className="mt-0.5"
+                />
+                <div className="space-y-1 leading-none">
+                  <Label htmlFor="proc-eproc" className="cursor-pointer">
+                    Processo migrado para o e-Proc
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Marque se este processo já foi migrado. Não será consultado
+                    automaticamente no DataJud (CNJ).
+                  </p>
+                </div>
               </div>
             </div>
 
