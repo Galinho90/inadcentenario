@@ -136,34 +136,72 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               filtered.map((d, i) => {
                 const judicial = isJudicial(d, settings);
                 const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
+                const proc = procMap.get(`${d.unidade}|${d.nome}`);
+                const isJudicialAtivo = judicial && !!proc;
+                const podeCobrar = judicial && !proc;
                 return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
                   className={
                     "cursor-pointer hover:bg-accent/60 " +
-                    (judicial ? "bg-destructive/5 hover:bg-destructive/10" : "")
+                    (isJudicialAtivo
+                      ? "bg-destructive/5 hover:bg-destructive/10"
+                      : podeCobrar
+                      ? "bg-warning/5 hover:bg-warning/10"
+                      : "")
                   }
                   onClick={() => setSelected(d)}
                 >
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="font-mono">{d.unidade}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span>{d.nome}</span>
-                      {judicial && (
+                      {isJudicialAtivo && (
                         <Badge
-                          variant="destructive"
-                          className="gap-1 animate-pulse"
-                          title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias — passível de cobrança judicial`}
+                          className="gap-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          title={`Processo ${proc!.numero_processo}`}
                         >
                           <Gavel className="h-3 w-3" />
                           Judicial
                         </Badge>
                       )}
+                      {podeCobrar && (
+                        <>
+                          <Badge
+                            className="gap-1 bg-warning text-warning-foreground hover:bg-warning/90 animate-pulse"
+                            title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias`}
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                            Cobrar judicial
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProc(d);
+                            }}
+                          >
+                            <Scale className="h-3 w-3 mr-1" />
+                            Adicionar processo
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant={judicial ? "destructive" : "secondary"}>
+                    <Badge
+                      variant={
+                        isJudicialAtivo
+                          ? "destructive"
+                          : podeCobrar
+                          ? "outline"
+                          : "secondary"
+                      }
+                      className={podeCobrar ? "border-warning text-warning" : ""}
+                    >
                       {d.boletos.length}
                     </Badge>
                   </TableCell>
