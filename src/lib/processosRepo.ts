@@ -19,6 +19,7 @@ export interface ProcessoJudicial {
   ultima_consulta: string | null;
   consulta_status: string | null;
   consulta_erro: string | null;
+  migrado_eproc: boolean;
 }
 
 /** Consulta o DataJud (CNJ) e atualiza o status de UM processo. */
@@ -85,6 +86,7 @@ export async function upsertProcesso(input: {
   nome: string;
   numero_processo: string;
   observacoes?: string | null;
+  migrado_eproc?: boolean;
 }): Promise<void> {
   const { error } = await supabase
     .from("processos_judiciais")
@@ -94,6 +96,7 @@ export async function upsertProcesso(input: {
         nome: input.nome,
         numero_processo: input.numero_processo,
         observacoes: input.observacoes ?? null,
+        migrado_eproc: input.migrado_eproc ?? false,
       },
       { onConflict: "unidade,nome" }
     );
