@@ -1,10 +1,3 @@
-import * as pdfjsLib from "pdfjs-dist";
-// Vite worker import
-// @ts-ignore
-import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
-
 export interface Debtor {
   unidade: string;
   nome: string;
@@ -25,39 +18,6 @@ export function formatBRL(n: number): string {
   });
 }
 
-/** Extrai texto de um PDF preservando quebras de linha por item Y. */
-export async function extractTextFromPdf(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = "";
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-    let lastY: number | null = null;
-    let line = "";
-    const lines: string[] = [];
-
-    for (const item of content.items as any[]) {
-      const y = item.transform?.[5];
-      const str = item.str ?? "";
-      if (lastY === null) {
-        line = str;
-      } else if (Math.abs(y - lastY) < 2) {
-        line += " " + str;
-      } else {
-        lines.push(line);
-        line = str;
-      }
-      lastY = y;
-    }
-    if (line) lines.push(line);
-    fullText += lines.join("\n") + "\n";
-  }
-
-  return fullText;
-}
-
 const UNIT_RE = /\b(\d{2}\s\d{2})\b/;
 const BRL_RE = /([\d]{1,3}(?:\.\d{3})*,\d{2})/;
 const TOTAL_RE = /total[^\n]*?([\d]{1,3}(?:\.\d{3})*,\d{2})/i;
@@ -69,7 +29,6 @@ export function parseDebtors(text: string): Debtor[] {
     .map((l) => l.trim())
     .filter(Boolean);
 
-  // Identifica índices que iniciam um bloco (linha com unidade)
   const blockStarts: number[] = [];
   lines.forEach((l, i) => {
     if (UNIT_RE.test(l)) blockStarts.push(i);
@@ -86,9 +45,7 @@ export function parseDebtors(text: string): Debtor[] {
     if (!unitMatch) continue;
     const unidade = unitMatch[1];
 
-    // Nome: primeira string textual no bloco (sem dígitos predominantes, sem "total")
     let nome = "";
-    // Tenta o restante da própria linha da unidade primeiro
     const restOfUnitLine = block[0].replace(UNIT_RE, "").trim();
     const candidateInline = stripNonName(restOfUnitLine);
     if (isLikelyName(candidateInline)) {
@@ -103,7 +60,6 @@ export function parseDebtors(text: string): Debtor[] {
       }
     }
 
-    // Total: linha contendo "total" + valor BR; fallback: maior valor do bloco
     let total = 0;
     for (let i = block.length - 1; i >= 0; i--) {
       const m = block[i].match(TOTAL_RE);
@@ -142,10 +98,8 @@ function isLikelyName(s: string): boolean {
   if (!s || s.length < 3) return false;
   if (/total|vencimento|valor|histórico|historico|saldo|juros|multa|condom|taxa/i.test(s))
     return false;
-  // Deve ter pelo menos duas palavras com letras
   const words = s.split(/\s+/).filter((w) => /[A-Za-zÀ-ÿ]{2,}/.test(w));
   if (words.length < 2) return false;
-  // Não pode ser majoritariamente dígitos
   const digits = (s.match(/\d/g) || []).length;
   return digits / s.length < 0.3;
 }

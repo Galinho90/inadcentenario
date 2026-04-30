@@ -4,7 +4,8 @@ import { StatsCards } from "@/components/StatsCards";
 import { DebtorsTable } from "@/components/DebtorsTable";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { extractTextFromPdf, parseDebtors, type Debtor } from "@/lib/pdfParser";
+import { parseDebtors, type Debtor } from "@/lib/pdfParser";
+import { extractTextFromPdf } from "@/lib/pdfLoader";
 import { toast } from "sonner";
 
 const Index = () => {
