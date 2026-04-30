@@ -164,7 +164,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="historico" className="mt-6">
-            <ReportsHistory onOpen={handleOpenFromHistory} refreshKey={historyKey} />
+            <ReportsHistory refreshKey={historyKey} />
           </TabsContent>
         </Tabs>
       </main>
