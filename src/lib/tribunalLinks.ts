@@ -65,9 +65,21 @@ export function getTribunalLink(numero: string): TribunalLink | null {
   if (p.segmento === "8") {
     const uf = TJ_POR_CODIGO[p.tribunal];
     if (uf === "SP") {
+      // e-SAJ TJSP: ao receber o número CNJ completo + tipoNuProcesso=UNIFICADO,
+      // o sistema redireciona direto para a página do processo (show.do).
+      const params = new URLSearchParams({
+        conversationId: "",
+        cbPesquisa: "NUMPROC",
+        numeroDigitoAnoUnificado: `${p.sequencial}-${p.dv}.${p.ano}`,
+        foroNumeroUnificado: p.origem,
+        "dadosConsulta.valorConsultaNuUnificado": numeroFormatado,
+        "dadosConsulta.valorConsulta": "",
+        "dadosConsulta.tipoNuProcesso": "UNIFICADO",
+        "dadosConsulta.localPesquisa.cdLocal": "-1",
+      });
       return {
-        url: `https://esaj.tjsp.jus.br/cpopg/search.do?conversationId=&cbPesquisa=NUMPROC&numeroDigitoAnoUnificado=${p.sequencial}-${p.dv}.${p.ano}&foroNumeroUnificado=${p.origem}&dadosConsulta.valorConsultaNuUnificado=${numeroFormatado}&dadosConsulta.tipoNuProcesso=UNIFICADO`,
-        label: "TJSP — e-SAJ",
+        url: `https://esaj.tjsp.jus.br/cpopg/search.do?${params.toString()}`,
+        label: "TJSP — abrir processo",
         sistema: "e-SAJ",
       };
     }
