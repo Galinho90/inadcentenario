@@ -92,29 +92,44 @@ export type Database = {
       }
       processos_judiciais: {
         Row: {
+          consulta_erro: string | null
+          consulta_status: string | null
           created_at: string
+          fase_atual: string | null
           id: string
           nome: string
           numero_processo: string
           observacoes: string | null
+          tribunal: string | null
+          ultima_consulta: string | null
           unidade: string
           updated_at: string
         }
         Insert: {
+          consulta_erro?: string | null
+          consulta_status?: string | null
           created_at?: string
+          fase_atual?: string | null
           id?: string
           nome: string
           numero_processo: string
           observacoes?: string | null
+          tribunal?: string | null
+          ultima_consulta?: string | null
           unidade: string
           updated_at?: string
         }
         Update: {
+          consulta_erro?: string | null
+          consulta_status?: string | null
           created_at?: string
+          fase_atual?: string | null
           id?: string
           nome?: string
           numero_processo?: string
           observacoes?: string | null
+          tribunal?: string | null
+          ultima_consulta?: string | null
           unidade?: string
           updated_at?: string
         }

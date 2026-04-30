@@ -1,93 +1,95 @@
 
-# Sistema de Leitura de PDF — Inadimplência
+# Integração DataJud (CNJ) — Status automático de processos
 
-Aplicação web client-side que processa PDFs padronizados de relatórios de inadimplência, extrai dados via regex (sem IA) e gera dashboard e relatórios interativos.
+Buscar a **fase atual** de cada processo judicial automaticamente via API pública do CNJ (DataJud), com sincronização diária e botão manual.
 
-## Escopo
+## 1. Banco de dados (migração)
 
-- Processamento 100% no navegador (sem backend obrigatório nesta primeira versão).
-- Persistência opcional via Supabase pode ser adicionada depois — a primeira entrega será apenas em sessão, para você validar a extração com o PDF real antes de integrar ao seu Supabase contratado.
-- Sem exportação (CSV/PDF) por enquanto.
-- Estilo claro e minimalista.
+Adicionar colunas em `processos_judiciais`:
 
-## Telas e Fluxo
+- `fase_atual` (text, nullable) — última movimentação descritiva, ex: "Conclusos para sentença"
+- `tribunal` (text, nullable) — sigla detectada do número CNJ, ex: "TJSP"
+- `ultima_consulta` (timestamptz, nullable) — quando foi a última sincronização
+- `consulta_status` (text, nullable) — `ok`, `nao_encontrado`, `erro`
+- `consulta_erro` (text, nullable) — mensagem em caso de erro
 
-### 1. Página Única (Dashboard + Upload)
+## 2. Secret necessária
 
-```text
-+--------------------------------------------------+
-|  Inadimplência — Leitor de PDF                   |
-+--------------------------------------------------+
-|  [ Arraste o PDF aqui ou clique para enviar ]    |
-|                                                  |
-|  Arquivo: relatorio-out-2026.pdf  [Reprocessar]  |
-+--------------------------------------------------+
-|  Total geral       Inadimplentes    Ticket médio |
-|  R$ 124.580,00     38               R$ 3.278,42  |
-+--------------------------------------------------+
-|  [ Lista Completa ] [ Ranking ]  Filtro: > R$ __ |
-|                                                  |
-|  Busca: [_________________]                      |
-|  +----+--------+----------------------+--------+ |
-|  | #  | Unid.  | Nome                 | Total  | |
-|  +----+--------+----------------------+--------+ |
-|  | 1  | 12 01  | João da Silva        | 5.420  | |
-|  | 2  | 03 02  | Maria Souza          | 4.890  | |
-|  ...                                             |
-+--------------------------------------------------+
+- `DATAJUD_API_KEY` — chave pública do CNJ (o usuário obtém em https://datajud-wiki.cnj.jus.br/api-publica/acesso). Vou solicitar via `add_secret` após aprovação.
+
+## 3. Edge function `consultar-processo`
+
+Endpoint POST que recebe `{ numero_processo, unidade, nome }`:
+
+1. Limpa o número (mantém só dígitos, valida 20 dígitos no formato CNJ).
+2. Identifica o tribunal pelos dígitos `J.TR` do número (ex: `8.26` → TJSP, `8.19` → TJRJ, `8.13` → TJMG, `5.03` → TRF3, etc.). Mapeamento via tabela interna.
+3. Faz `POST` para `https://api-publica.datajud.cnj.jus.br/api_publica_{tribunal}/_search` com header `Authorization: APIKey {DATAJUD_API_KEY}` e body de busca pelo `numeroProcesso`.
+4. Extrai do retorno: última movimentação (`movimentos[].nome` mais recente por `dataHora`) → grava em `fase_atual`.
+5. Atualiza `processos_judiciais` com `fase_atual`, `tribunal`, `ultima_consulta`, `consulta_status`.
+6. Retorna o registro atualizado.
+
+Validação com Zod, CORS habilitado, sem JWT obrigatório.
+
+## 4. Edge function `consultar-processos-batch`
+
+Itera por todos os processos em `processos_judiciais` e chama a lógica de consulta para cada um (com pequeno delay para não estourar rate limit do DataJud). Retorna resumo `{ atualizados, erros }`.
+
+## 5. Cron diário (pg_cron + pg_net)
+
+Habilitar `pg_cron` e `pg_net` e agendar chamada para `consultar-processos-batch` **uma vez por dia às 06:00**:
+
+```sql
+select cron.schedule(
+  'sync-processos-diario',
+  '0 6 * * *',
+  $$ select net.http_post(
+       url:='https://zwngrpxfrrocpdsicinb.supabase.co/functions/v1/consultar-processos-batch',
+       headers:='{"Content-Type":"application/json","apikey":"<ANON_KEY>"}'::jsonb,
+       body:='{}'::jsonb
+     ); $$
+);
 ```
 
-### 2. Estados da interface
-- **Vazio**: dropzone centralizado com instruções.
-- **Processando**: spinner + "Lendo PDF...".
-- **Erro de parsing**: alerta amigável com mensagem ("Nenhuma unidade encontrada no padrão esperado").
-- **Sucesso**: dashboard + tabela.
+## 6. UI
 
-## Funcionalidades
+**`src/lib/processosRepo.ts`**
+- Estender `ProcessoJudicial` com os novos campos.
+- Adicionar `consultarProcesso(unidade, nome, numero)` e `consultarTodos()` que chamam as edge functions via `supabase.functions.invoke`.
 
-1. **Upload de PDF** via dropzone (drag & drop e clique).
-2. **Extração de texto** do PDF página a página.
-3. **Parsing por regex** identificando blocos de:
-   - Unidade (padrão `\d{2}\s\d{2}`, ex: "12 01")
-   - Nome do morador (linha após a unidade ou rótulo)
-   - Total (linha contendo "Total" + valor monetário BR)
-4. **Estruturação** em lista de objetos `{ unidade, nome, total }`.
-5. **Dashboard** com cards: Total geral, Quantidade de inadimplentes, Ticket médio.
-6. **Relatórios** em abas:
-   - Lista Completa (ordem do PDF)
-   - Ranking (ordenado por valor desc.)
-   - Filtro por valor mínimo (input numérico)
-7. **Busca** por nome ou unidade na tabela.
-8. **Reprocessar** o mesmo arquivo após ajuste de filtros sem reupload.
+**`src/components/DebtorsTable.tsx`** (linha do devedor com processo)
+- Ao lado do número do processo, mostrar badge cinza com `fase_atual` (ex: "Em execução"). Se `null`, mostrar "—".
+- Tooltip com "Atualizado há X dias" baseado em `ultima_consulta`.
 
-## Detalhes Técnicos
+**Modal de detalhes do devedor** (seção judicial vermelha)
+- Mostrar bloco "Status processual":
+  - Fase atual
+  - Tribunal detectado
+  - Última consulta (data formatada)
+- Botão **"Atualizar status"** que chama `consultarProcesso` e recarrega.
 
-- **Stack**: React + Vite + Tailwind + shadcn/ui (já no projeto).
-- **Leitura de PDF**: `pdfjs-dist` (executa no navegador, sem servidor). Usaremos `getDocument` + `getTextContent` por página, concatenando os itens em texto plano preservando quebras de linha.
-- **Parser** (`src/lib/pdfParser.ts`):
-  - Regex unidade: `/\b(\d{2}\s\d{2})\b/`
-  - Regex valor BR: `/R?\$?\s*([\d.]+,\d{2})/`
-  - Regex linha total: `/total[^\n]*?([\d.]+,\d{2})/i`
-  - Estratégia: dividir o texto em blocos por unidade encontrada; dentro de cada bloco, capturar o nome (primeira linha textual após a unidade que não seja número/valor) e o valor da linha "Total".
-  - Função utilitária `parseBRL(str): number` para converter "1.234,56" → 1234.56.
-- **Estado**: `useState` local na página + `useMemo` para derivar ranking, totais e filtros.
-- **Componentes novos**:
-  - `src/components/PdfDropzone.tsx`
-  - `src/components/StatsCards.tsx`
-  - `src/components/DebtorsTable.tsx` (com busca, ordenação)
-  - `src/lib/pdfParser.ts` (lógica pura, testável)
-- **Teste**: um teste vitest em `src/lib/pdfParser.test.ts` validando parse de uma string de exemplo.
-- **Tema**: paleta clara minimalista — fundo branco, cinza neutro, acento azul discreto. Tipografia Inter (system fallback).
+**`src/components/DashboardOverview.tsx`** (header da página ou área de ações)
+- Botão **"Sincronizar processos agora"** que chama `consultarTodos()` e mostra toast com resumo.
 
-## Sobre o PDF de Exemplo
+## 7. Mapeamento de tribunais (interno na edge)
 
-Você indicou que vai enviar um PDF modelo. Recomendo anexá-lo logo após aprovar este plano — assim eu calibro as regex com o layout real antes de finalizar. Se o padrão for muito diferente do assumido (ex: unidade em formato "Apto 1201" ou tabela com colunas), eu ajusto o parser sem mudar a estrutura geral.
+Tabela com os endpoints públicos do DataJud, ex:
+- Justiça Estadual: `api_publica_tjsp`, `api_publica_tjrj`, `api_publica_tjmg`, `api_publica_tjpr`, `api_publica_tjrs`, etc. (cobre todos os 27 TJs)
+- Justiça Federal: `api_publica_trf1` a `api_publica_trf6`
+- Justiça do Trabalho: `api_publica_trt1` a `api_publica_trt24` + `api_publica_tst`
+- Justiça Eleitoral, Militar e Superiores conforme necessário.
 
-## Persistência (fase futura, fora desta entrega)
+A sigla é derivada do segmento `J.TR` do número CNJ padrão.
 
-Quando o parser estiver validado, podemos conectar seu Supabase externo para:
-- Salvar histórico de relatórios processados.
-- Comparar inadimplência mês a mês.
-- Login para múltiplos usuários do condomínio.
+## Observações
 
-Isso será uma segunda etapa, depois que a extração estiver 100% precisa.
+- O DataJud não é em tempo real — atualização típica de algumas horas a 1-2 dias. Para a maioria dos casos de cobrança é suficiente.
+- Rate limit do DataJud é generoso para uso público, mas adicionamos delay de ~200ms entre chamadas no batch.
+- Nenhuma alteração nos componentes existentes além das listadas; histórico, dashboard e fluxo de PDF ficam intactos.
+
+## Próximos passos após sua aprovação
+
+1. Criar migração com as novas colunas.
+2. Pedir a chave `DATAJUD_API_KEY` (via add_secret).
+3. Criar as duas edge functions.
+4. Habilitar `pg_cron`/`pg_net` e agendar o job diário.
+5. Atualizar `processosRepo.ts`, `DebtorsTable.tsx` e `DashboardOverview.tsx`.
