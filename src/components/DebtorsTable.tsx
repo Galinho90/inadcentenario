@@ -113,7 +113,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               </TableRow>
             ) : (
               filtered.map((d, i) => {
-                const judicial = d.boletos.length >= JUDICIAL_THRESHOLD;
+                const judicial = isJudicial(d);
+                const overdueCount = countOverdueBoletos(d);
                 return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
@@ -132,7 +133,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                         <Badge
                           variant="destructive"
                           className="gap-1 animate-pulse"
-                          title={`${d.boletos.length} boletos atrasados — passível de cobrança judicial`}
+                          title={`${overdueCount} boletos com mais de ${JUDICIAL_MIN_ATRASO_DIAS} dias — passível de cobrança judicial`}
                         >
                           <Gavel className="h-3 w-3" />
                           Judicial
