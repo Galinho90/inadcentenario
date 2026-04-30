@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Trophy } from "lucide-react";
+import { ArrowLeft, Loader2, Settings, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DashboardOverview } from "@/components/DashboardOverview";
@@ -59,6 +59,12 @@ const Relatorio = () => {
               </p>
             )}
           </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/configuracoes">
+              <Settings className="h-4 w-4 mr-1.5" />
+              Configurações
+            </Link>
+          </Button>
         </div>
       </header>
 

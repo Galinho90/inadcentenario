@@ -7,7 +7,8 @@ import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Save, Loader2 } from "lucide-react";
+import { AlertCircle, Save, Loader2, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { parseDebtors, type Debtor } from "@/lib/pdfParser";
 import { extractTextFromPdf } from "@/lib/pdfLoader";
 import { saveReport } from "@/lib/reportsRepo";
@@ -85,13 +86,21 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container py-6">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Inadimplência — Leitor de PDF
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Envie o relatório em PDF para extrair unidades, moradores e valores devidos.
-          </p>
+        <div className="container py-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Inadimplência — Leitor de PDF
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Envie o relatório em PDF para extrair unidades, moradores e valores devidos.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/configuracoes">
+              <Settings className="h-4 w-4 mr-1.5" />
+              Configurações
+            </Link>
+          </Button>
         </div>
       </header>
 

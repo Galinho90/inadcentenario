@@ -20,12 +20,11 @@ import {
   deleteProcesso,
   indexByKey,
   isJudicial,
-  JUDICIAL_MIN_ATRASO_DIAS,
-  JUDICIAL_MIN_BOLETOS,
   listProcessos,
   upsertProcesso,
   type ProcessoJudicial,
 } from "@/lib/processosRepo";
+import { useJudicialSettings } from "@/lib/settings";
 import { toast } from "sonner";
 
 interface Props {
@@ -35,6 +34,7 @@ interface Props {
 }
 
 export function JudicialAlert({ debtors, editable = false }: Props) {
+  const settings = useJudicialSettings();
   const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Debtor | null>(null);
@@ -44,9 +44,9 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
 
   const elegiveis = useMemo(() => {
     return debtors
-      .filter(isJudicial)
+      .filter((d) => isJudicial(d, settings))
       .sort((a, b) => b.total - a.total);
-  }, [debtors]);
+  }, [debtors, settings]);
 
   const map = useMemo(() => indexByKey(processos), [processos]);
 
@@ -145,8 +145,8 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
         </AlertTitle>
         <AlertDescription className="space-y-3 mt-2">
           <p className="text-sm">
-            Critério: <strong>{JUDICIAL_MIN_BOLETOS}+ boletos</strong> com mais de{" "}
-            <strong>{JUDICIAL_MIN_ATRASO_DIAS} dias</strong> de atraso. Total
+            Critério: <strong>{settings.minBoletos}+ boletos</strong> com mais de{" "}
+            <strong>{settings.minAtrasoDias} dias</strong> de atraso. Total
             envolvido:{" "}
             <strong className="text-foreground">{formatBRL(totalDevido)}</strong>.
           </p>
@@ -160,7 +160,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
             <ul className="space-y-2">
               {elegiveis.map((d) => {
                 const proc = map.get(`${d.unidade}|${d.nome}`);
-                const overdue = countOverdueBoletos(d);
+                const overdue = countOverdueBoletos(d, settings.minAtrasoDias);
                 return (
                   <li
                     key={`${d.unidade}-${d.nome}`}
@@ -173,7 +173,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
                         </span>
                         <span className="font-medium truncate">{d.nome}</span>
                         <Badge variant="outline" className="text-xs">
-                          {overdue} boletos +{JUDICIAL_MIN_ATRASO_DIAS}d
+                          {overdue} boletos +{settings.minAtrasoDias}d
                         </Badge>
                       </div>
                       {proc ? (

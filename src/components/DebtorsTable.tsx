@@ -20,12 +20,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronRight, Gavel, AlertTriangle } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
-import {
-  countOverdueBoletos,
-  isJudicial,
-  JUDICIAL_MIN_ATRASO_DIAS,
-  JUDICIAL_MIN_BOLETOS,
-} from "@/lib/processosRepo";
+import { countOverdueBoletos, isJudicial } from "@/lib/processosRepo";
+import { useJudicialSettings } from "@/lib/settings";
 
 interface Props {
   debtors: Debtor[];
@@ -38,6 +34,7 @@ interface Props {
 type Mode = "lista" | "ranking";
 
 export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
+  const settings = useJudicialSettings();
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [internalMode, setInternalMode] = useState<Mode>("lista");
@@ -113,8 +110,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               </TableRow>
             ) : (
               filtered.map((d, i) => {
-                const judicial = isJudicial(d);
-                const overdueCount = countOverdueBoletos(d);
+                const judicial = isJudicial(d, settings);
+                const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
                 return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
@@ -133,7 +130,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                         <Badge
                           variant="destructive"
                           className="gap-1 animate-pulse"
-                          title={`${overdueCount} boletos com mais de ${JUDICIAL_MIN_ATRASO_DIAS} dias — passível de cobrança judicial`}
+                          title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias — passível de cobrança judicial`}
                         >
                           <Gavel className="h-3 w-3" />
                           Judicial
@@ -185,7 +182,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
 
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4 space-y-4">
-                  {isJudicial(selected) && (
+                  {isJudicial(selected, settings) && (
                     <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                       <div className="rounded-full bg-destructive/20 p-2">
                         <Gavel className="h-5 w-5 text-destructive" />
@@ -197,15 +194,17 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           </h4>
                           <Badge variant="destructive" className="gap-1">
                             <AlertTriangle className="h-3 w-3" />
-                            {countOverdueBoletos(selected)} boletos +
-                            {JUDICIAL_MIN_ATRASO_DIAS}d
+                            {countOverdueBoletos(selected, settings.minAtrasoDias)} boletos +
+                            {settings.minAtrasoDias}d
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
                           Este morador acumula{" "}
-                          <strong>{countOverdueBoletos(selected)}</strong> boletos
-                          com mais de {JUDICIAL_MIN_ATRASO_DIAS} dias de atraso,
-                          totalizando{" "}
+                          <strong>
+                            {countOverdueBoletos(selected, settings.minAtrasoDias)}
+                          </strong>{" "}
+                          boletos com mais de {settings.minAtrasoDias} dias de
+                          atraso, totalizando{" "}
                           <strong className="text-foreground">
                             {formatBRL(selected.total)}
                           </strong>
