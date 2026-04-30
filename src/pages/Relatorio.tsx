@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DashboardOverview } from "@/components/DashboardOverview";
 import { DebtorsTable } from "@/components/DebtorsTable";
+import { JudicialAlert } from "@/components/JudicialAlert";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { loadReport, type ReportSummary } from "@/lib/reportsRepo";
 import { type Debtor } from "@/lib/pdfParser";
