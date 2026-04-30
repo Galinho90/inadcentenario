@@ -110,8 +110,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               </TableRow>
             ) : (
               filtered.map((d, i) => {
-                const judicial = isJudicial(d);
-                const overdueCount = countOverdueBoletos(d);
+                const judicial = isJudicial(d, settings);
+                const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
                 return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
