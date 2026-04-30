@@ -202,8 +202,10 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Este morador acumula <strong>{selected.boletos.length}</strong>{" "}
-                          boletos em atraso, totalizando{" "}
+                          Este morador acumula{" "}
+                          <strong>{countOverdueBoletos(selected)}</strong> boletos
+                          com mais de {JUDICIAL_MIN_ATRASO_DIAS} dias de atraso,
+                          totalizando{" "}
                           <strong className="text-foreground">
                             {formatBRL(selected.total)}
                           </strong>
