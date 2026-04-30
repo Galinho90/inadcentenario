@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Save, Loader2 } from "lucide-react";
 import { parseDebtors, type Debtor } from "@/lib/pdfParser";
 import { extractTextFromPdf } from "@/lib/pdfLoader";
-import { saveReport, loadReport } from "@/lib/reportsRepo";
+import { saveReport } from "@/lib/reportsRepo";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -71,24 +71,7 @@ const Index = () => {
     }
   }
 
-  async function handleOpenFromHistory(id: string) {
-    setLoading(true);
-    setError(null);
-    setFile(null);
-    try {
-      const { summary, debtors: d } = await loadReport(id);
-      setFileName(summary.nome_arquivo);
-      setDebtors(d);
-      setSavedId(id);
-      setTab("atual");
-      toast.success(`Relatório "${summary.nome_arquivo}" carregado`);
-    } catch (e) {
-      console.error(e);
-      toast.error("Falha ao abrir relatório");
-    } finally {
-      setLoading(false);
-    }
-  }
+
 
   function reset() {
     setFile(null);
