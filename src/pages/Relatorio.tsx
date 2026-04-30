@@ -76,6 +76,7 @@ const Relatorio = () => {
         ) : (
           <>
             <DashboardOverview debtors={debtors} fileName={summary?.nome_arquivo} />
+            <JudicialAlert debtors={debtors} editable={true} />
 
             <Tabs value={tab} onValueChange={(v) => setTab(v as "lista" | "ranking")}>
               <TabsList>
