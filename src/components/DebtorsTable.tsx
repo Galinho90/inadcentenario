@@ -152,7 +152,17 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
             </TabsList>
           </Tabs>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncAll}
+            disabled={syncingAll || processos.length === 0}
+            title="Consultar status de todos os processos no DataJud (CNJ)"
+          >
+            <RefreshCw className={"h-3.5 w-3.5 mr-1.5 " + (syncingAll ? "animate-spin" : "")} />
+            {syncingAll ? "Sincronizando..." : "Sincronizar processos"}
+          </Button>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
