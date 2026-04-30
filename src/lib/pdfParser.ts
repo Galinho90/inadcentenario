@@ -18,9 +18,11 @@ export function formatBRL(n: number): string {
   });
 }
 
-const UNIT_RE = /\b(\d{2}\s\d{2})\b/;
+// Cabeçalho do bloco: "12 01 - MARIA JOSE DA SILVA"
+const HEADER_RE = /\b(\d{2}\s\d{2})\s*[-–]\s*(.+?)\s*$/;
 const BRL_RE = /([\d]{1,3}(?:\.\d{3})*,\d{2})/;
-const TOTAL_RE = /total[^\n]*?([\d]{1,3}(?:\.\d{3})*,\d{2})/i;
+// Linha de total: "Total 300,00 300,00" — pega o último valor da linha
+const TOTAL_RE = /\btotal\b/i;
 
 /** Faz parsing do texto extraído em uma lista de devedores. */
 export function parseDebtors(text: string): Debtor[] {
@@ -29,77 +31,55 @@ export function parseDebtors(text: string): Debtor[] {
     .map((l) => l.trim())
     .filter(Boolean);
 
-  const blockStarts: number[] = [];
+  // Identifica linhas de cabeçalho (unidade + nome)
+  const headers: { idx: number; unidade: string; nome: string }[] = [];
   lines.forEach((l, i) => {
-    if (UNIT_RE.test(l)) blockStarts.push(i);
+    const m = l.match(HEADER_RE);
+    if (m) {
+      const nome = m[2].trim();
+      // Filtra ruído: nome precisa parecer um nome (ao menos 2 palavras com letras)
+      const words = nome.split(/\s+/).filter((w) => /[A-Za-zÀ-ÿ]{2,}/.test(w));
+      if (words.length >= 2) {
+        headers.push({ idx: i, unidade: m[1], nome });
+      }
+    }
   });
 
   const debtors: Debtor[] = [];
-
-  for (let b = 0; b < blockStarts.length; b++) {
-    const start = blockStarts[b];
-    const end = blockStarts[b + 1] ?? lines.length;
-    const block = lines.slice(start, end);
-
-    const unitMatch = block[0].match(UNIT_RE);
-    if (!unitMatch) continue;
-    const unidade = unitMatch[1];
-
-    let nome = "";
-    const restOfUnitLine = block[0].replace(UNIT_RE, "").trim();
-    const candidateInline = stripNonName(restOfUnitLine);
-    if (isLikelyName(candidateInline)) {
-      nome = candidateInline;
-    } else {
-      for (let i = 1; i < block.length; i++) {
-        const candidate = stripNonName(block[i]);
-        if (isLikelyName(candidate)) {
-          nome = candidate;
-          break;
-        }
-      }
-    }
+  // Mapa de unidade -> índices das ocorrências de cabeçalho (pode haver duplicidade quando o nome aparece "isolado" em outra página)
+  for (let h = 0; h < headers.length; h++) {
+    const { unidade, nome, idx } = headers[h];
+    const end = headers[h + 1]?.idx ?? lines.length;
+    const block = lines.slice(idx + 1, end);
 
     let total = 0;
-    for (let i = block.length - 1; i >= 0; i--) {
-      const m = block[i].match(TOTAL_RE);
-      if (m) {
-        total = parseBRL(m[1]);
+    for (const l of block) {
+      if (!TOTAL_RE.test(l)) continue;
+      const matches = l.match(new RegExp(BRL_RE.source, "g"));
+      if (matches && matches.length) {
+        // Último valor da linha "Total" é o total final
+        total = parseBRL(matches[matches.length - 1]);
         break;
       }
     }
-    if (total === 0) {
-      const values: number[] = [];
-      block.forEach((l) => {
-        const matches = l.match(new RegExp(BRL_RE.source, "g"));
-        if (matches) matches.forEach((v) => values.push(parseBRL(v)));
-      });
-      if (values.length) total = Math.max(...values);
-    }
 
-    if (nome && total > 0) {
+    if (total > 0) {
       debtors.push({ unidade, nome, total });
     }
   }
 
-  return debtors;
+  // Deduplica por (unidade+nome) somando valores caso o relatório tenha cabeçalho repetido
+  const map = new Map<string, Debtor>();
+  for (const d of debtors) {
+    const key = `${d.unidade}|${d.nome.toLowerCase()}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.total = Math.max(existing.total, d.total);
+    } else {
+      map.set(key, { ...d });
+    }
+  }
+
+  return Array.from(map.values());
 }
 
-function stripNonName(s: string): string {
-  return s
-    .replace(BRL_RE, "")
-    .replace(/R\$/g, "")
-    .replace(/\b\d{2}\/\d{2}\/\d{2,4}\b/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-function isLikelyName(s: string): boolean {
-  if (!s || s.length < 3) return false;
-  if (/total|vencimento|valor|histórico|historico|saldo|juros|multa|condom|taxa/i.test(s))
-    return false;
-  const words = s.split(/\s+/).filter((w) => /[A-Za-zÀ-ÿ]{2,}/.test(w));
-  if (words.length < 2) return false;
-  const digits = (s.match(/\d/g) || []).length;
-  return digits / s.length < 0.3;
-}
