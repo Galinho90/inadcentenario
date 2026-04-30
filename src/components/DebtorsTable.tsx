@@ -154,7 +154,9 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
     setSyncingAll(false);
     toast({
       title: "Sincronização concluída",
-      description: `${ok} atualizados · ${erro} com problema (de ${lista.length})`,
+      description:
+        `${ok} atualizados · ${erro} com problema (de ${lista.length})` +
+        (pulados > 0 ? ` · ${pulados} ignorados (e-Proc)` : ""),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
