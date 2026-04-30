@@ -550,11 +550,24 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                 )}
                               </p>
                               <div className="rounded-md border border-border/50 bg-background/50 p-3 space-y-1">
-                                <div className="text-xs font-medium text-muted-foreground">
+                                <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                                   Status processual (DataJud)
+                                  {proc!.migrado_eproc && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] border-primary/40 text-primary"
+                                    >
+                                      e-Proc
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="text-sm">
-                                  {proc!.fase_atual ? (
+                                  {proc!.migrado_eproc ? (
+                                    <span className="text-muted-foreground italic">
+                                      Processo no e-Proc — consulta automática desativada.
+                                      Verifique o status no portal do tribunal.
+                                    </span>
+                                  ) : proc!.fase_atual ? (
                                     <strong className="text-foreground">
                                       {proc!.fase_atual}
                                     </strong>
@@ -572,7 +585,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                                     </span>
                                   )}
                                 </div>
-                                {proc!.ultima_consulta && (
+                                {proc!.ultima_consulta && !proc!.migrado_eproc && (
                                   <div className="text-xs text-muted-foreground">
                                     Última consulta:{" "}
                                     {new Date(proc!.ultima_consulta).toLocaleString("pt-BR")}
