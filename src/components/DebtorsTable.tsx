@@ -158,13 +158,18 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span>{d.nome}</span>
                       {isJudicialAtivo && (
-                        <Badge
-                          className="gap-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          title={`Processo ${proc!.numero_processo}`}
-                        >
-                          <Gavel className="h-3 w-3" />
-                          Judicial
-                        </Badge>
+                        <>
+                          <Badge
+                            className="gap-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            title={`Processo ${proc!.numero_processo}`}
+                          >
+                            <Gavel className="h-3 w-3" />
+                            Judicial
+                          </Badge>
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {proc!.numero_processo}
+                          </span>
+                        </>
                       )}
                       {podeCobrar && (
                         <>
