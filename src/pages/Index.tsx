@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PdfDropzone } from "@/components/PdfDropzone";
 import { DashboardOverview } from "@/components/DashboardOverview";
 import { DebtorsTable } from "@/components/DebtorsTable";
-import { JudicialAlert } from "@/components/JudicialAlert";
+
 import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -181,7 +181,7 @@ const Index = () => {
                   debtors={debtors}
                   fileName={current?.nome_arquivo}
                 />
-                <JudicialAlert debtors={debtors} editable />
+                
                 <DebtorsTable debtors={debtors} />
               </>
             ) : null}
