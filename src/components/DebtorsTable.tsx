@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -18,10 +18,18 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronRight, Gavel, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
-import { countOverdueBoletos, isJudicial } from "@/lib/processosRepo";
+import {
+  countOverdueBoletos,
+  indexByKey,
+  isJudicial,
+  listProcessos,
+  type ProcessoJudicial,
+} from "@/lib/processosRepo";
 import { useJudicialSettings } from "@/lib/settings";
+import { ProcessoFormDialog } from "./ProcessoFormDialog";
 
 interface Props {
   debtors: Debtor[];
@@ -40,6 +48,22 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [internalMode, setInternalMode] = useState<Mode>("lista");
   const mode = modeProp ?? internalMode;
   const [selected, setSelected] = useState<Debtor | null>(null);
+  const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
+  const [editingProc, setEditingProc] = useState<Debtor | null>(null);
+
+  const procMap = useMemo(() => indexByKey(processos), [processos]);
+
+  const refreshProcessos = useCallback(async () => {
+    try {
+      setProcessos(await listProcessos());
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshProcessos();
+  }, [refreshProcessos]);
 
   const filtered = useMemo(() => {
     const min = parseFloat(minValue.replace(",", ".")) || 0;
@@ -112,34 +136,72 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               filtered.map((d, i) => {
                 const judicial = isJudicial(d, settings);
                 const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
+                const proc = procMap.get(`${d.unidade}|${d.nome}`);
+                const isJudicialAtivo = judicial && !!proc;
+                const podeCobrar = judicial && !proc;
                 return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
                   className={
                     "cursor-pointer hover:bg-accent/60 " +
-                    (judicial ? "bg-destructive/5 hover:bg-destructive/10" : "")
+                    (isJudicialAtivo
+                      ? "bg-destructive/5 hover:bg-destructive/10"
+                      : podeCobrar
+                      ? "bg-warning/5 hover:bg-warning/10"
+                      : "")
                   }
                   onClick={() => setSelected(d)}
                 >
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="font-mono">{d.unidade}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span>{d.nome}</span>
-                      {judicial && (
+                      {isJudicialAtivo && (
                         <Badge
-                          variant="destructive"
-                          className="gap-1 animate-pulse"
-                          title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias — passível de cobrança judicial`}
+                          className="gap-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          title={`Processo ${proc!.numero_processo}`}
                         >
                           <Gavel className="h-3 w-3" />
                           Judicial
                         </Badge>
                       )}
+                      {podeCobrar && (
+                        <>
+                          <Badge
+                            className="gap-1 bg-warning text-warning-foreground hover:bg-warning/90 animate-pulse"
+                            title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias`}
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                            Cobrar judicial
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProc(d);
+                            }}
+                          >
+                            <Scale className="h-3 w-3 mr-1" />
+                            Adicionar processo
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant={judicial ? "destructive" : "secondary"}>
+                    <Badge
+                      variant={
+                        isJudicialAtivo
+                          ? "destructive"
+                          : podeCobrar
+                          ? "outline"
+                          : "secondary"
+                      }
+                      className={podeCobrar ? "border-warning text-warning" : ""}
+                    >
                       {d.boletos.length}
                     </Badge>
                   </TableCell>
@@ -182,38 +244,95 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
 
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4 space-y-4">
-                  {isJudicial(selected, settings) && (
-                    <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                      <div className="rounded-full bg-destructive/20 p-2">
-                        <Gavel className="h-5 w-5 text-destructive" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-semibold text-destructive">
-                            Passível de cobrança judicial
-                          </h4>
-                          <Badge variant="destructive" className="gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            {countOverdueBoletos(selected, settings.minAtrasoDias)} boletos +
-                            {settings.minAtrasoDias}d
-                          </Badge>
+                  {isJudicial(selected, settings) && (() => {
+                    const proc = procMap.get(`${selected.unidade}|${selected.nome}`);
+                    const ativo = !!proc;
+                    return (
+                      <div
+                        className={
+                          "flex items-start gap-3 rounded-lg border p-4 " +
+                          (ativo
+                            ? "border-destructive/30 bg-destructive/10"
+                            : "border-warning/40 bg-warning/10")
+                        }
+                      >
+                        <div
+                          className={
+                            "rounded-full p-2 " +
+                            (ativo ? "bg-destructive/20" : "bg-warning/20")
+                          }
+                        >
+                          <Gavel
+                            className={
+                              "h-5 w-5 " +
+                              (ativo ? "text-destructive" : "text-warning")
+                            }
+                          />
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Este morador acumula{" "}
-                          <strong>
-                            {countOverdueBoletos(selected, settings.minAtrasoDias)}
-                          </strong>{" "}
-                          boletos com mais de {settings.minAtrasoDias} dias de
-                          atraso, totalizando{" "}
-                          <strong className="text-foreground">
-                            {formatBRL(selected.total)}
-                          </strong>
-                          . Recomenda-se o encaminhamento para cobrança judicial
-                          conforme convenção do condomínio.
-                        </p>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4
+                              className={
+                                "font-semibold " +
+                                (ativo ? "text-destructive" : "text-warning")
+                              }
+                            >
+                              {ativo
+                                ? "Em cobrança judicial"
+                                : "Cobrar judicialmente"}
+                            </h4>
+                            <Badge
+                              className={
+                                "gap-1 " +
+                                (ativo
+                                  ? "bg-destructive text-destructive-foreground"
+                                  : "bg-warning text-warning-foreground")
+                              }
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              {countOverdueBoletos(selected, settings.minAtrasoDias)}{" "}
+                              boletos +{settings.minAtrasoDias}d
+                            </Badge>
+                          </div>
+                          {ativo ? (
+                            <p className="text-sm text-muted-foreground">
+                              Processo:{" "}
+                              <strong className="font-mono text-foreground">
+                                {proc!.numero_processo}
+                              </strong>
+                              {proc!.observacoes && (
+                                <>
+                                  <br />
+                                  <span className="text-xs">
+                                    {proc!.observacoes}
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              Este morador atende ao critério para cobrança
+                              judicial. Cadastre o número do processo para
+                              marcá-lo como <strong>Judicial</strong>.
+                            </p>
+                          )}
+                          <Button
+                            size="sm"
+                            variant={ativo ? "outline" : "default"}
+                            className={
+                              ativo
+                                ? ""
+                                : "bg-warning text-warning-foreground hover:bg-warning/90"
+                            }
+                            onClick={() => setEditingProc(selected)}
+                          >
+                            <Scale className="h-3.5 w-3.5 mr-1.5" />
+                            {ativo ? "Editar processo" : "Adicionar processo"}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   {selected.boletos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
                       Nenhum boleto detalhado encontrado para este morador.
@@ -259,6 +378,18 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
           )}
         </DialogContent>
       </Dialog>
+
+      <ProcessoFormDialog
+        debtor={editingProc}
+        existing={
+          editingProc
+            ? procMap.get(`${editingProc.unidade}|${editingProc.nome}`) ?? null
+            : null
+        }
+        open={!!editingProc}
+        onOpenChange={(o) => !o && setEditingProc(null)}
+        onSaved={refreshProcessos}
+      />
     </div>
   );
 }
