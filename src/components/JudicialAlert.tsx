@@ -145,8 +145,8 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
         </AlertTitle>
         <AlertDescription className="space-y-3 mt-2">
           <p className="text-sm">
-            Critério: <strong>{JUDICIAL_MIN_BOLETOS}+ boletos</strong> com mais de{" "}
-            <strong>{JUDICIAL_MIN_ATRASO_DIAS} dias</strong> de atraso. Total
+            Critério: <strong>{settings.minBoletos}+ boletos</strong> com mais de{" "}
+            <strong>{settings.minAtrasoDias} dias</strong> de atraso. Total
             envolvido:{" "}
             <strong className="text-foreground">{formatBRL(totalDevido)}</strong>.
           </p>
