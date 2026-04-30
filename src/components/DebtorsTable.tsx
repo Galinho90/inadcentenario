@@ -108,17 +108,38 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((d, i) => (
+              filtered.map((d, i) => {
+                const judicial = d.boletos.length >= JUDICIAL_THRESHOLD;
+                return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
-                  className="cursor-pointer hover:bg-accent/60"
+                  className={
+                    "cursor-pointer hover:bg-accent/60 " +
+                    (judicial ? "bg-destructive/5 hover:bg-destructive/10" : "")
+                  }
                   onClick={() => setSelected(d)}
                 >
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="font-mono">{d.unidade}</TableCell>
-                  <TableCell>{d.nome}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{d.nome}</span>
+                      {judicial && (
+                        <Badge
+                          variant="destructive"
+                          className="gap-1 animate-pulse"
+                          title={`${d.boletos.length} boletos atrasados — passível de cobrança judicial`}
+                        >
+                          <Gavel className="h-3 w-3" />
+                          Judicial
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="secondary">{d.boletos.length}</Badge>
+                    <Badge variant={judicial ? "destructive" : "secondary"}>
+                      {d.boletos.length}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatBRL(d.total)}
@@ -127,7 +148,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                     <ChevronRight className="h-4 w-4" />
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>
