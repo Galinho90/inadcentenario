@@ -34,6 +34,7 @@ interface Props {
 }
 
 export function JudicialAlert({ debtors, editable = false }: Props) {
+  const settings = useJudicialSettings();
   const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Debtor | null>(null);
@@ -43,9 +44,9 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
 
   const elegiveis = useMemo(() => {
     return debtors
-      .filter(isJudicial)
+      .filter((d) => isJudicial(d, settings))
       .sort((a, b) => b.total - a.total);
-  }, [debtors]);
+  }, [debtors, settings]);
 
   const map = useMemo(() => indexByKey(processos), [processos]);
 
