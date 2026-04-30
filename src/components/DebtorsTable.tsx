@@ -27,11 +27,11 @@ import {
   indexByKey,
   isJudicial,
   listProcessos,
-  sincronizarTodosProcessos,
   type ProcessoJudicial,
 } from "@/lib/processosRepo";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 
 interface Props {
@@ -55,6 +55,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
   const [syncingKey, setSyncingKey] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ done: 0, total: 0, ok: 0, erro: 0 });
 
   const handleSyncOne = useCallback(
     async (proc: ProcessoJudicial) => {
@@ -91,23 +92,36 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   );
 
   const handleSyncAll = useCallback(async () => {
-    setSyncingAll(true);
-    try {
-      const r = await sincronizarTodosProcessos();
-      await refreshProcessos();
-      toast({
-        title: "Sincronização concluída",
-        description: `${r.atualizados} atualizados · ${r.erros} erros (de ${r.total})`,
-      });
-    } catch (e) {
-      toast({
-        title: "Falha na sincronização",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
-    } finally {
-      setSyncingAll(false);
+    const lista = await listProcessos();
+    if (lista.length === 0) {
+      toast({ title: "Nada para sincronizar", description: "Nenhum processo cadastrado." });
+      return;
     }
+    setSyncingAll(true);
+    setSyncProgress({ done: 0, total: lista.length, ok: 0, erro: 0 });
+    let ok = 0;
+    let erro = 0;
+    for (let i = 0; i < lista.length; i++) {
+      const p = lista[i];
+      try {
+        const r = await consultarStatusProcesso({
+          unidade: p.unidade,
+          nome: p.nome,
+          numero_processo: p.numero_processo,
+        });
+        if (r.consulta_status === "ok") ok++;
+        else erro++;
+      } catch {
+        erro++;
+      }
+      setSyncProgress({ done: i + 1, total: lista.length, ok, erro });
+    }
+    await refreshProcessos();
+    setSyncingAll(false);
+    toast({
+      title: "Sincronização concluída",
+      description: `${ok} atualizados · ${erro} com problema (de ${lista.length})`,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -161,7 +175,9 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
             title="Consultar status de todos os processos no DataJud (CNJ)"
           >
             <RefreshCw className={"h-3.5 w-3.5 mr-1.5 " + (syncingAll ? "animate-spin" : "")} />
-            {syncingAll ? "Sincronizando..." : "Sincronizar processos"}
+            {syncingAll
+              ? `Sincronizando ${syncProgress.done}/${syncProgress.total}...`
+              : "Sincronizar processos"}
           </Button>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -182,6 +198,27 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
           />
         </div>
       </div>
+
+      {syncingAll && syncProgress.total > 0 && (
+        <div className="rounded-lg border bg-card p-3 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
+              Consultando DataJud (CNJ)…
+            </span>
+            <span className="font-mono text-xs text-muted-foreground">
+              {syncProgress.done} / {syncProgress.total}
+              {syncProgress.erro > 0 && (
+                <span className="ml-2 text-destructive">· {syncProgress.erro} erros</span>
+              )}
+            </span>
+          </div>
+          <Progress
+            value={(syncProgress.done / syncProgress.total) * 100}
+            className="h-2"
+          />
+        </div>
+      )}
 
       <div className="rounded-lg border bg-card">
         <Table>
