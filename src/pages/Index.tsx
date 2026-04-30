@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { PdfDropzone } from "@/components/PdfDropzone";
-import { StatsCards } from "@/components/StatsCards";
+import { DashboardOverview } from "@/components/DashboardOverview";
 import { DebtorsTable } from "@/components/DebtorsTable";
 import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -119,10 +119,6 @@ const Index = () => {
 
             {debtors.length > 0 && (
               <>
-                <div className="flex items-center justify-between gap-4">
-                  <StatsCards total={total} count={debtors.length} />
-                </div>
-
                 {file && !savedId && (
                   <div className="flex justify-end">
                     <Button onClick={handleSave} disabled={saving}>
@@ -141,6 +137,7 @@ const Index = () => {
                   </p>
                 )}
 
+                <DashboardOverview debtors={debtors} fileName={fileName} />
                 <DebtorsTable debtors={debtors} />
               </>
             )}
