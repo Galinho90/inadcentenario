@@ -14,7 +14,112 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      boletos: {
+        Row: {
+          atraso: number
+          codigo: string | null
+          created_at: string
+          id: string
+          inadimplente_id: string
+          principal: number
+          total: number
+          vencimento: string
+        }
+        Insert: {
+          atraso?: number
+          codigo?: string | null
+          created_at?: string
+          id?: string
+          inadimplente_id: string
+          principal?: number
+          total?: number
+          vencimento: string
+        }
+        Update: {
+          atraso?: number
+          codigo?: string | null
+          created_at?: string
+          id?: string
+          inadimplente_id?: string
+          principal?: number
+          total?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boletos_inadimplente_id_fkey"
+            columns: ["inadimplente_id"]
+            isOneToOne: false
+            referencedRelation: "inadimplentes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inadimplentes: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          relatorio_id: string
+          total: number
+          unidade: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          relatorio_id: string
+          total?: number
+          unidade: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          relatorio_id?: string
+          total?: number
+          unidade?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inadimplentes_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorios: {
+        Row: {
+          created_at: string
+          id: string
+          nome_arquivo: string
+          processado_em: string
+          quantidade_inadimplentes: number
+          total_geral: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          processado_em?: string
+          quantidade_inadimplentes?: number
+          total_geral?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          processado_em?: string
+          quantidade_inadimplentes?: number
+          total_geral?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
