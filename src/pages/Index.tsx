@@ -139,6 +139,7 @@ const Index = () => {
                 )}
 
                 <DashboardOverview debtors={debtors} fileName={fileName} />
+                <JudicialAlert debtors={debtors} editable={false} />
                 <DebtorsTable debtors={debtors} />
               </>
             )}
