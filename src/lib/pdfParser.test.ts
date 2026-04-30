@@ -30,12 +30,18 @@ Total 172,91 172,91
 `;
     const result = parseDebtors(text);
     expect(result).toHaveLength(3);
-    expect(result[0]).toEqual({
-      unidade: "12 01",
-      nome: "MARIA JOSE DA SILVA",
-      total: 300,
+    expect(result[0].unidade).toBe("12 01");
+    expect(result[0].nome).toBe("MARIA JOSE DA SILVA");
+    expect(result[0].total).toBe(300);
+    expect(result[0].boletos).toHaveLength(2);
+    expect(result[0].boletos[0]).toEqual({
+      vencimento: "25/12/25",
+      atraso: 18,
+      codigo: "131180",
+      principal: 180,
+      total: 180,
     });
-    expect(result[1].nome).toBe("CAIQUE VIEIRA DA SILVA");
+    expect(result[1].boletos).toHaveLength(1);
     expect(result[1].total).toBe(11466.24);
     expect(result[2].total).toBe(172.91);
   });
