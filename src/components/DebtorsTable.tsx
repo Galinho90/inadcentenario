@@ -105,7 +105,13 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
     const lista = todos.filter((p) => !p.migrado_eproc);
     const pulados = todos.length - lista.length;
     if (lista.length === 0) {
-      toast({ title: "Nada para sincronizar", description: "Nenhum processo cadastrado." });
+      toast({
+        title: "Nada para sincronizar",
+        description:
+          todos.length === 0
+            ? "Nenhum processo cadastrado."
+            : `Todos os ${todos.length} processos estão marcados como e-Proc.`,
+      });
       return;
     }
     setSyncingAll(true);
