@@ -56,6 +56,9 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const [syncingKey, setSyncingKey] = useState<string | null>(null);
   const [syncingAll, setSyncingAll] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ done: 0, total: 0, ok: 0, erro: 0 });
+  const [syncErrors, setSyncErrors] = useState<
+    Array<{ unidade: string; nome: string; numero_processo: string; status: string; mensagem: string }>
+  >([]);
 
   const handleSyncOne = useCallback(
     async (proc: ProcessoJudicial) => {
@@ -99,8 +102,10 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
     }
     setSyncingAll(true);
     setSyncProgress({ done: 0, total: lista.length, ok: 0, erro: 0 });
+    setSyncErrors([]);
     let ok = 0;
     let erro = 0;
+    const erros: Array<{ unidade: string; nome: string; numero_processo: string; status: string; mensagem: string }> = [];
     for (let i = 0; i < lista.length; i++) {
       const p = lista[i];
       try {
@@ -109,12 +114,33 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
           nome: p.nome,
           numero_processo: p.numero_processo,
         });
-        if (r.consulta_status === "ok") ok++;
-        else erro++;
-      } catch {
+        if (r.consulta_status === "ok") {
+          ok++;
+        } else {
+          erro++;
+          erros.push({
+            unidade: p.unidade,
+            nome: p.nome,
+            numero_processo: p.numero_processo,
+            status: r.consulta_status,
+            mensagem:
+              r.consulta_status === "nao_encontrado"
+                ? "Processo não encontrado no DataJud"
+                : r.consulta_erro ?? "Erro desconhecido",
+          });
+        }
+      } catch (e) {
         erro++;
+        erros.push({
+          unidade: p.unidade,
+          nome: p.nome,
+          numero_processo: p.numero_processo,
+          status: "erro",
+          mensagem: e instanceof Error ? e.message : String(e),
+        });
       }
       setSyncProgress({ done: i + 1, total: lista.length, ok, erro });
+      setSyncErrors([...erros]);
     }
     await refreshProcessos();
     setSyncingAll(false);
