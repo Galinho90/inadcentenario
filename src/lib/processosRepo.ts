@@ -1,7 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Debtor } from "./pdfParser";
+import { getJudicialSettings } from "./settings";
 
+/** @deprecated use settings — mantido apenas como fallback. */
 export const JUDICIAL_MIN_BOLETOS = 3;
+/** @deprecated use settings — mantido apenas como fallback. */
 export const JUDICIAL_MIN_ATRASO_DIAS = 30;
 
 export interface ProcessoJudicial {
@@ -13,13 +16,21 @@ export interface ProcessoJudicial {
   updated_at: string;
 }
 
-/** Devedor é elegível à cobrança judicial: 3+ boletos com >30 dias de atraso. */
-export function countOverdueBoletos(d: Debtor): number {
-  return d.boletos.filter((b) => b.atraso > JUDICIAL_MIN_ATRASO_DIAS).length;
+/** Quantos boletos do devedor estão com atraso acima do limite configurado. */
+export function countOverdueBoletos(d: Debtor, minAtrasoDias?: number): number {
+  const min = minAtrasoDias ?? getJudicialSettings().minAtrasoDias;
+  return d.boletos.filter((b) => b.atraso > min).length;
 }
 
-export function isJudicial(d: Debtor): boolean {
-  return countOverdueBoletos(d) >= JUDICIAL_MIN_BOLETOS;
+/** Devedor é elegível à cobrança judicial conforme as configurações. */
+export function isJudicial(
+  d: Debtor,
+  opts?: { minBoletos?: number; minAtrasoDias?: number }
+): boolean {
+  const cfg = getJudicialSettings();
+  const minB = opts?.minBoletos ?? cfg.minBoletos;
+  const minA = opts?.minAtrasoDias ?? cfg.minAtrasoDias;
+  return countOverdueBoletos(d, minA) >= minB;
 }
 
 export async function listProcessos(): Promise<ProcessoJudicial[]> {
