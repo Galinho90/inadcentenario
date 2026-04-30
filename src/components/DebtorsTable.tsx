@@ -619,7 +619,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                               <Scale className="h-3.5 w-3.5 mr-1.5" />
                               {ativo ? "Editar processo" : "Adicionar processo"}
                             </Button>
-                            {ativo && (
+                            {ativo && !proc!.migrado_eproc && (
                               <Button
                                 size="sm"
                                 variant="outline"
