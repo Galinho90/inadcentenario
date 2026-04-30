@@ -97,6 +97,7 @@ export type Database = {
           created_at: string
           fase_atual: string | null
           id: string
+          migrado_eproc: boolean
           nome: string
           numero_processo: string
           observacoes: string | null
@@ -111,6 +112,7 @@ export type Database = {
           created_at?: string
           fase_atual?: string | null
           id?: string
+          migrado_eproc?: boolean
           nome: string
           numero_processo: string
           observacoes?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           created_at?: string
           fase_atual?: string | null
           id?: string
+          migrado_eproc?: boolean
           nome?: string
           numero_processo?: string
           observacoes?: string | null
