@@ -10,12 +10,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronRight } from "lucide-react";
@@ -136,13 +136,13 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
         para ver os boletos
       </p>
 
-      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col">
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-2xl p-0 gap-0">
           {selected && (
             <>
-              <SheetHeader className="p-6 pb-4 border-b">
-                <SheetTitle>{selected.nome}</SheetTitle>
-                <SheetDescription className="flex items-center justify-between">
+              <DialogHeader className="p-6 pb-4 border-b">
+                <DialogTitle>{selected.nome}</DialogTitle>
+                <DialogDescription className="flex items-center justify-between gap-4">
                   <span>
                     Unidade <span className="font-mono">{selected.unidade}</span> ·{" "}
                     {selected.boletos.length}{" "}
@@ -151,10 +151,10 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                   <span className="font-semibold text-foreground">
                     {formatBRL(selected.total)}
                   </span>
-                </SheetDescription>
-              </SheetHeader>
+                </DialogDescription>
+              </DialogHeader>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4">
                   {selected.boletos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
@@ -199,8 +199,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               </ScrollArea>
             </>
           )}
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
