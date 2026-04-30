@@ -27,11 +27,11 @@ import {
   indexByKey,
   isJudicial,
   listProcessos,
-  sincronizarTodosProcessos,
   type ProcessoJudicial,
 } from "@/lib/processosRepo";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 
 interface Props {
@@ -175,7 +175,9 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
             title="Consultar status de todos os processos no DataJud (CNJ)"
           >
             <RefreshCw className={"h-3.5 w-3.5 mr-1.5 " + (syncingAll ? "animate-spin" : "")} />
-            {syncingAll ? "Sincronizando..." : "Sincronizar processos"}
+            {syncingAll
+              ? `Sincronizando ${syncProgress.done}/${syncProgress.total}...`
+              : "Sincronizar processos"}
           </Button>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
