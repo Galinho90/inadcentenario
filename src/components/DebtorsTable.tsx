@@ -101,7 +101,9 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   );
 
   const handleSyncAll = useCallback(async () => {
-    const lista = await listProcessos();
+    const todos = await listProcessos();
+    const lista = todos.filter((p) => !p.migrado_eproc);
+    const pulados = todos.length - lista.length;
     if (lista.length === 0) {
       toast({ title: "Nada para sincronizar", description: "Nenhum processo cadastrado." });
       return;
