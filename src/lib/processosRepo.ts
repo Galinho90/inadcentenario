@@ -14,6 +14,44 @@ export interface ProcessoJudicial {
   numero_processo: string;
   observacoes: string | null;
   updated_at: string;
+  fase_atual: string | null;
+  tribunal: string | null;
+  ultima_consulta: string | null;
+  consulta_status: string | null;
+  consulta_erro: string | null;
+}
+
+/** Consulta o DataJud (CNJ) e atualiza o status de UM processo. */
+export async function consultarStatusProcesso(input: {
+  unidade: string;
+  nome: string;
+  numero_processo: string;
+}): Promise<{
+  ok: boolean;
+  fase_atual: string | null;
+  tribunal: string | null;
+  consulta_status: string;
+  consulta_erro: string | null;
+}> {
+  const { data, error } = await supabase.functions.invoke("consultar-processo", {
+    body: input,
+  });
+  if (error) throw error;
+  return data;
+}
+
+/** Sincroniza TODOS os processos via DataJud. */
+export async function sincronizarTodosProcessos(): Promise<{
+  total: number;
+  atualizados: number;
+  erros: number;
+}> {
+  const { data, error } = await supabase.functions.invoke(
+    "consultar-processos-batch",
+    { body: {} }
+  );
+  if (error) throw error;
+  return data;
 }
 
 /** Quantos boletos do devedor estão com atraso acima do limite configurado. */
