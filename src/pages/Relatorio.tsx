@@ -37,8 +37,11 @@ const Relatorio = () => {
     })();
   }, [id]);
 
-  const total = debtors.reduce((acc, d) => acc + d.total, 0);
-  const top5 = [...debtors].sort((a, b) => b.total - a.total).slice(0, 5);
+  const total = useMemo(() => debtors.reduce((acc, d) => acc + d.total, 0), [debtors]);
+  const top5 = useMemo(
+    () => [...debtors].sort((a, b) => b.total - a.total).slice(0, 5),
+    [debtors]
+  );
 
   return (
     <div className="min-h-screen bg-background">
