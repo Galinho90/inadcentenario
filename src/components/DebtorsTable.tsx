@@ -244,38 +244,95 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
 
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4 space-y-4">
-                  {isJudicial(selected, settings) && (
-                    <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
-                      <div className="rounded-full bg-destructive/20 p-2">
-                        <Gavel className="h-5 w-5 text-destructive" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-semibold text-destructive">
-                            Passível de cobrança judicial
-                          </h4>
-                          <Badge variant="destructive" className="gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            {countOverdueBoletos(selected, settings.minAtrasoDias)} boletos +
-                            {settings.minAtrasoDias}d
-                          </Badge>
+                  {isJudicial(selected, settings) && (() => {
+                    const proc = procMap.get(`${selected.unidade}|${selected.nome}`);
+                    const ativo = !!proc;
+                    return (
+                      <div
+                        className={
+                          "flex items-start gap-3 rounded-lg border p-4 " +
+                          (ativo
+                            ? "border-destructive/30 bg-destructive/10"
+                            : "border-warning/40 bg-warning/10")
+                        }
+                      >
+                        <div
+                          className={
+                            "rounded-full p-2 " +
+                            (ativo ? "bg-destructive/20" : "bg-warning/20")
+                          }
+                        >
+                          <Gavel
+                            className={
+                              "h-5 w-5 " +
+                              (ativo ? "text-destructive" : "text-warning")
+                            }
+                          />
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Este morador acumula{" "}
-                          <strong>
-                            {countOverdueBoletos(selected, settings.minAtrasoDias)}
-                          </strong>{" "}
-                          boletos com mais de {settings.minAtrasoDias} dias de
-                          atraso, totalizando{" "}
-                          <strong className="text-foreground">
-                            {formatBRL(selected.total)}
-                          </strong>
-                          . Recomenda-se o encaminhamento para cobrança judicial
-                          conforme convenção do condomínio.
-                        </p>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4
+                              className={
+                                "font-semibold " +
+                                (ativo ? "text-destructive" : "text-warning")
+                              }
+                            >
+                              {ativo
+                                ? "Em cobrança judicial"
+                                : "Cobrar judicialmente"}
+                            </h4>
+                            <Badge
+                              className={
+                                "gap-1 " +
+                                (ativo
+                                  ? "bg-destructive text-destructive-foreground"
+                                  : "bg-warning text-warning-foreground")
+                              }
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              {countOverdueBoletos(selected, settings.minAtrasoDias)}{" "}
+                              boletos +{settings.minAtrasoDias}d
+                            </Badge>
+                          </div>
+                          {ativo ? (
+                            <p className="text-sm text-muted-foreground">
+                              Processo:{" "}
+                              <strong className="font-mono text-foreground">
+                                {proc!.numero_processo}
+                              </strong>
+                              {proc!.observacoes && (
+                                <>
+                                  <br />
+                                  <span className="text-xs">
+                                    {proc!.observacoes}
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              Este morador atende ao critério para cobrança
+                              judicial. Cadastre o número do processo para
+                              marcá-lo como <strong>Judicial</strong>.
+                            </p>
+                          )}
+                          <Button
+                            size="sm"
+                            variant={ativo ? "outline" : "default"}
+                            className={
+                              ativo
+                                ? ""
+                                : "bg-warning text-warning-foreground hover:bg-warning/90"
+                            }
+                            onClick={() => setEditingProc(selected)}
+                          >
+                            <Scale className="h-3.5 w-3.5 mr-1.5" />
+                            {ativo ? "Editar processo" : "Adicionar processo"}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   {selected.boletos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
                       Nenhum boleto detalhado encontrado para este morador.
