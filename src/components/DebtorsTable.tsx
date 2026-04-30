@@ -9,7 +9,16 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Search, ChevronRight } from "lucide-react";
 import { Debtor, formatBRL } from "@/lib/pdfParser";
 
 interface Props {
@@ -22,6 +31,7 @@ export function DebtorsTable({ debtors }: Props) {
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [mode, setMode] = useState<Mode>("lista");
+  const [selected, setSelected] = useState<Debtor | null>(null);
 
   const filtered = useMemo(() => {
     const min = parseFloat(minValue.replace(",", ".")) || 0;
@@ -74,24 +84,36 @@ export function DebtorsTable({ debtors }: Props) {
               <TableHead className="w-12">#</TableHead>
               <TableHead>Unidade</TableHead>
               <TableHead>Nome</TableHead>
+              <TableHead className="text-center">Boletos</TableHead>
               <TableHead className="text-right">Total</TableHead>
+              <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   Nenhum registro encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((d, i) => (
-                <TableRow key={`${d.unidade}-${d.nome}-${i}`}>
+                <TableRow
+                  key={`${d.unidade}-${d.nome}-${i}`}
+                  className="cursor-pointer hover:bg-accent/60"
+                  onClick={() => setSelected(d)}
+                >
                   <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                   <TableCell className="font-mono">{d.unidade}</TableCell>
                   <TableCell>{d.nome}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="secondary">{d.boletos.length}</Badge>
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatBRL(d.total)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <ChevronRight className="h-4 w-4" />
                   </TableCell>
                 </TableRow>
               ))
@@ -101,8 +123,75 @@ export function DebtorsTable({ debtors }: Props) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Exibindo {filtered.length} de {debtors.length} registros
+        Exibindo {filtered.length} de {debtors.length} registros — clique em uma linha
+        para ver os boletos
       </p>
+
+      <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col">
+          {selected && (
+            <>
+              <SheetHeader className="p-6 pb-4 border-b">
+                <SheetTitle>{selected.nome}</SheetTitle>
+                <SheetDescription className="flex items-center justify-between">
+                  <span>
+                    Unidade <span className="font-mono">{selected.unidade}</span> ·{" "}
+                    {selected.boletos.length}{" "}
+                    {selected.boletos.length === 1 ? "boleto" : "boletos"}
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {formatBRL(selected.total)}
+                  </span>
+                </SheetDescription>
+              </SheetHeader>
+
+              <ScrollArea className="flex-1">
+                <div className="p-6 pt-4">
+                  {selected.boletos.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Nenhum boleto detalhado encontrado para este morador.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Vencimento</TableHead>
+                          <TableHead className="text-center">Atraso</TableHead>
+                          <TableHead>Código</TableHead>
+                          <TableHead className="text-right">Valor</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selected.boletos.map((b, i) => (
+                          <TableRow key={`${b.codigo}-${i}`}>
+                            <TableCell className="font-mono text-xs">
+                              {b.vencimento}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge
+                                variant={b.atraso > 90 ? "destructive" : "secondary"}
+                                className="font-mono"
+                              >
+                                {b.atraso}d
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs text-muted-foreground">
+                              {b.codigo}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatBRL(b.total)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </ScrollArea>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
