@@ -378,6 +378,18 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
           )}
         </DialogContent>
       </Dialog>
+
+      <ProcessoFormDialog
+        debtor={editingProc}
+        existing={
+          editingProc
+            ? procMap.get(`${editingProc.unidade}|${editingProc.nome}`) ?? null
+            : null
+        }
+        open={!!editingProc}
+        onOpenChange={(o) => !o && setEditingProc(null)}
+        onSaved={refreshProcessos}
+      />
     </div>
   );
 }
