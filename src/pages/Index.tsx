@@ -8,7 +8,7 @@ import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2, Settings, Upload } from "lucide-react";
+import { AlertCircle, Loader2, Settings, Upload, UserCircle } from "lucide-react";
 import { parseDebtors, type Debtor } from "@/lib/pdfParser";
 import { extractTextFromPdf } from "@/lib/pdfLoader";
 import {
@@ -92,12 +92,20 @@ const Index = () => {
               substituir a lista.
             </p>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/configuracoes">
-              <Settings className="h-4 w-4 mr-1.5" />
-              Configurações
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/perfil">
+                <UserCircle className="h-4 w-4 mr-1.5" />
+                Perfil
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/configuracoes">
+                <Settings className="h-4 w-4 mr-1.5" />
+                Configurações
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 
