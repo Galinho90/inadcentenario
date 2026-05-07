@@ -49,10 +49,13 @@ interface Props {
 
 type Mode = "lista" | "ranking";
 
+  type CobrancaFilter = "todos" | "judicial" | "extrajudicial";
+
 export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const settings = useJudicialSettings();
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
+  const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
   const [internalMode, setInternalMode] = useState<Mode>("lista");
   const mode = modeProp ?? internalMode;
   const [selected, setSelected] = useState<Debtor | null>(null);
