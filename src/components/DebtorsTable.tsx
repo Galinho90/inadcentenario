@@ -84,11 +84,24 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
         (d.nome.toLowerCase().includes(search.toLowerCase()) ||
           d.unidade.includes(search))
     );
+
+    if (cobrancaFilter !== "todos") {
+      list = list.filter((d) => {
+        const proc = procMap.get(`${d.unidade}|${d.nome}`);
+        const judicial = isJudicial(d, settings);
+        const extrajudicial = isExtrajudicial(d, settings);
+        if (cobrancaFilter === "judicial") {
+          return (proc && proc.tipo === "judicial") || (judicial && !proc);
+        }
+        return (proc && proc.tipo === "extrajudicial") || (extrajudicial && !proc);
+      });
+    }
+
     if (mode === "ranking") {
       list = [...list].sort((a, b) => b.total - a.total);
     }
     return list;
-  }, [debtors, search, minValue, mode]);
+  }, [debtors, search, minValue, mode, cobrancaFilter, procMap, settings]);
 
   return (
     <div className="space-y-4">
