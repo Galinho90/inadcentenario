@@ -136,10 +136,13 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
             ) : (
               filtered.map((d, i) => {
                 const judicial = isJudicial(d, settings);
+                const extrajudicial = isExtrajudicial(d, settings);
                 const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
                 const proc = procMap.get(`${d.unidade}|${d.nome}`);
-                const isJudicialAtivo = judicial && !!proc;
-                const podeCobrar = judicial && !proc;
+                const isJudicialAtivo = !!proc && proc.tipo === "judicial";
+                const isExtrajudicialAtivo = !!proc && proc.tipo === "extrajudicial";
+                const podeCobrarJudicial = judicial && !proc;
+                const podeCobrarExtrajudicial = extrajudicial && !proc;
                 return (
                 <TableRow
                   key={`${d.unidade}-${d.nome}-${i}`}
@@ -147,8 +150,12 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                     "cursor-pointer hover:bg-accent/60 " +
                     (isJudicialAtivo
                       ? "bg-destructive/5 hover:bg-destructive/10"
-                      : podeCobrar
+                      : isExtrajudicialAtivo
+                      ? "bg-orange-500/5 hover:bg-orange-500/10"
+                      : podeCobrarJudicial
                       ? "bg-warning/5 hover:bg-warning/10"
+                      : podeCobrarExtrajudicial
+                      ? "bg-orange-500/5 hover:bg-orange-500/10"
                       : "")
                   }
                   onClick={() => setSelected(d)}
@@ -172,7 +179,21 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           </span>
                         </>
                       )}
-                      {podeCobrar && (
+                      {isExtrajudicialAtivo && (
+                        <>
+                          <Badge
+                            className="gap-1 bg-orange-500 text-white hover:bg-orange-600"
+                            title={`Cobrança extrajudicial - ${proc!.numero_processo}`}
+                          >
+                            <FileWarning className="h-3 w-3" />
+                            Extrajudicial
+                          </Badge>
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {proc!.numero_processo}
+                          </span>
+                        </>
+                      )}
+                      {podeCobrarJudicial && (
                         <>
                           <Badge
                             className="gap-1 bg-warning text-warning-foreground hover:bg-warning/90 animate-pulse"
@@ -195,6 +216,29 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           </Button>
                         </>
                       )}
+                      {podeCobrarExtrajudicial && (
+                        <>
+                          <Badge
+                            className="gap-1 bg-orange-500/80 text-white hover:bg-orange-500 animate-pulse"
+                            title={`${overdueCount} boleto(s) com mais de ${settings.minAtrasoDias} dias`}
+                          >
+                            <FileWarning className="h-3 w-3" />
+                            Cobrar extrajudicial
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProc(d);
+                            }}
+                          >
+                            <FileWarning className="h-3 w-3 mr-1" />
+                            Adicionar cobrança
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
@@ -202,11 +246,19 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                       variant={
                         isJudicialAtivo
                           ? "destructive"
-                          : podeCobrar
+                          : isExtrajudicialAtivo
+                          ? "outline"
+                          : podeCobrarJudicial
                           ? "outline"
                           : "secondary"
                       }
-                      className={podeCobrar ? "border-warning text-warning" : ""}
+                      className={
+                        isExtrajudicialAtivo
+                          ? "border-orange-500 text-orange-500"
+                          : podeCobrarJudicial
+                          ? "border-warning text-warning"
+                          : ""
+                      }
                     >
                       {d.boletos.length}
                     </Badge>
