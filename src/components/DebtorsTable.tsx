@@ -425,7 +425,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                         </div>
                       </div>
                     );
-                  })()
+                  })()}
                   {selected.boletos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
                       Nenhum boleto detalhado encontrado para este morador.
