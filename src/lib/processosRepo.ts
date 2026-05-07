@@ -62,6 +62,7 @@ export async function upsertProcesso(input: {
   nome: string;
   numero_processo: string;
   observacoes?: string | null;
+  tipo?: ProcessoTipo;
 }): Promise<void> {
   const { error } = await supabase
     .from("processos_judiciais")
@@ -71,7 +72,8 @@ export async function upsertProcesso(input: {
         nome: input.nome,
         numero_processo: input.numero_processo,
         observacoes: input.observacoes ?? null,
-      },
+        tipo: input.tipo ?? "judicial",
+      } as any,
       { onConflict: "unidade,nome" }
     );
   if (error) throw error;
