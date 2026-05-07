@@ -302,48 +302,80 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
 
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4 space-y-4">
-                  {isJudicial(selected, settings) && (() => {
+                  {(() => {
                     const proc = procMap.get(`${selected.unidade}|${selected.nome}`);
-                    const ativo = !!proc;
+                    const judicial = isJudicial(selected, settings);
+                    const extrajudicial = isExtrajudicial(selected, settings);
+                    const isJudicialAtivo = !!proc && proc.tipo === "judicial";
+                    const isExtrajudicialAtivo = !!proc && proc.tipo === "extrajudicial";
+                    const podeCobrarJudicial = judicial && !proc;
+                    const podeCobrarExtrajudicial = extrajudicial && !proc;
+
+                    if (!isJudicialAtivo && !isExtrajudicialAtivo && !podeCobrarJudicial && !podeCobrarExtrajudicial) return null;
+
+                    const ativo = isJudicialAtivo || isExtrajudicialAtivo;
+                    const isExt = isExtrajudicialAtivo || podeCobrarExtrajudicial;
+                    const colorClass = isJudicialAtivo ? "destructive" : isExt ? "orange-500" : "warning";
+
                     return (
                       <div
                         className={
                           "flex items-start gap-3 rounded-lg border p-4 " +
-                          (ativo
+                          (isJudicialAtivo
                             ? "border-destructive/30 bg-destructive/10"
+                            : isExt
+                            ? "border-orange-500/30 bg-orange-500/10"
                             : "border-warning/40 bg-warning/10")
                         }
                       >
                         <div
                           className={
                             "rounded-full p-2 " +
-                            (ativo ? "bg-destructive/20" : "bg-warning/20")
+                            (isJudicialAtivo
+                              ? "bg-destructive/20"
+                              : isExt
+                              ? "bg-orange-500/20"
+                              : "bg-warning/20")
                           }
                         >
-                          <Gavel
-                            className={
-                              "h-5 w-5 " +
-                              (ativo ? "text-destructive" : "text-warning")
-                            }
-                          />
+                          {isExt ? (
+                            <FileWarning className="h-5 w-5 text-orange-500" />
+                          ) : (
+                            <Gavel
+                              className={
+                                "h-5 w-5 " +
+                                (isJudicialAtivo ? "text-destructive" : "text-warning")
+                              }
+                            />
+                          )}
                         </div>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4
                               className={
                                 "font-semibold " +
-                                (ativo ? "text-destructive" : "text-warning")
+                                (isJudicialAtivo
+                                  ? "text-destructive"
+                                  : isExt
+                                  ? "text-orange-500"
+                                  : "text-warning")
                               }
                             >
-                              {ativo
+                              {isJudicialAtivo
                                 ? "Em cobrança judicial"
-                                : "Cobrar judicialmente"}
+                                : isExtrajudicialAtivo
+                                ? "Em cobrança extrajudicial"
+                                : podeCobrarJudicial
+                                ? "Cobrar judicialmente"
+                                : "Cobrar extrajudicialmente"}
                             </h4>
                             <Badge
                               className={
                                 "gap-1 " +
-                                (ativo
+                                (isJudicialAtivo
                                   ? "bg-destructive text-destructive-foreground"
+                                  : isExt
+                                  ? "bg-orange-500 text-white"
                                   : "bg-warning text-warning-foreground")
                               }
                             >
@@ -355,7 +387,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                           {ativo ? (
                             <div className="text-sm space-y-2">
                               <p className="text-muted-foreground">
-                                Processo:{" "}
+                                {isExt ? "Referência" : "Processo"}:{" "}
                                 <strong className="font-mono text-foreground">
                                   {proc!.numero_processo}
                                 </strong>
@@ -368,9 +400,9 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                             </div>
                           ) : (
                             <p className="text-sm text-muted-foreground">
-                              Este morador atende ao critério para cobrança
-                              judicial. Cadastre o número do processo para
-                              marcá-lo como <strong>Judicial</strong>.
+                              {podeCobrarJudicial
+                                ? "Este morador atende ao critério para cobrança judicial. Cadastre o número do processo para marcá-lo como Judicial."
+                                : "Este morador possui boletos atrasados. Registre uma cobrança extrajudicial."}
                             </p>
                           )}
                           <div className="flex gap-2 flex-wrap">
@@ -380,18 +412,20 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                               className={
                                 ativo
                                   ? ""
-                                  : "bg-warning text-warning-foreground hover:bg-warning/90"
+                                  : podeCobrarJudicial
+                                  ? "bg-warning text-warning-foreground hover:bg-warning/90"
+                                  : "bg-orange-500 text-white hover:bg-orange-600"
                               }
                               onClick={() => setEditingProc(selected)}
                             >
                               <Scale className="h-3.5 w-3.5 mr-1.5" />
-                              {ativo ? "Editar processo" : "Adicionar processo"}
+                              {ativo ? "Editar" : podeCobrarJudicial ? "Adicionar processo" : "Adicionar cobrança"}
                             </Button>
                           </div>
                         </div>
                       </div>
                     );
-                  })()}
+                  })()
                   {selected.boletos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">
                       Nenhum boleto detalhado encontrado para este morador.
