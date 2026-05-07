@@ -103,6 +103,20 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
     return list;
   }, [debtors, search, minValue, mode, cobrancaFilter, procMap, settings]);
 
+  const judicialCount = useMemo(() => {
+    return debtors.filter((d) => {
+      const proc = procMap.get(`${d.unidade}|${d.nome}`);
+      return (proc && proc.tipo === "judicial") || isJudicial(d, settings);
+    }).length;
+  }, [debtors, procMap, settings]);
+
+  const extrajudicialCount = useMemo(() => {
+    return debtors.filter((d) => {
+      const proc = procMap.get(`${d.unidade}|${d.nome}`);
+      return (proc && proc.tipo === "extrajudicial") || isExtrajudicial(d, settings);
+    }).length;
+  }, [debtors, procMap, settings]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
