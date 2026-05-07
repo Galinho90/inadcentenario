@@ -92,12 +92,20 @@ const Index = () => {
               substituir a lista.
             </p>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/configuracoes">
-              <Settings className="h-4 w-4 mr-1.5" />
-              Configurações
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/perfil">
+                <UserCircle className="h-4 w-4 mr-1.5" />
+                Perfil
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/configuracoes">
+                <Settings className="h-4 w-4 mr-1.5" />
+                Configurações
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 
