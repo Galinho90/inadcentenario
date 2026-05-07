@@ -11,24 +11,13 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || "Erro ao autenticar");
     } finally {
@@ -45,7 +34,7 @@ export default function Auth() {
             INAD Cetenário
           </CardTitle>
           <CardDescription>
-            {isSignUp ? "Crie sua conta para acessar" : "Faça login para acessar o sistema"}
+            Faça login para acessar o sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,19 +63,9 @@ export default function Auth() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Aguarde..." : isSignUp ? "Criar conta" : "Entrar"}
+              {loading ? "Aguarde..." : "Entrar"}
             </Button>
           </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            {isSignUp ? "Já tem conta?" : "Não tem conta?"}{" "}
-            <button
-              type="button"
-              className="underline text-primary hover:text-primary/80"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp ? "Fazer login" : "Criar conta"}
-            </button>
-          </p>
         </CardContent>
       </Card>
     </div>
