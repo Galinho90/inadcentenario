@@ -10,6 +10,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -42,10 +49,13 @@ interface Props {
 
 type Mode = "lista" | "ranking";
 
+  type CobrancaFilter = "todos" | "judicial" | "extrajudicial";
+
 export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   const settings = useJudicialSettings();
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
+  const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
   const [internalMode, setInternalMode] = useState<Mode>("lista");
   const mode = modeProp ?? internalMode;
   const [selected, setSelected] = useState<Debtor | null>(null);
@@ -74,11 +84,24 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
         (d.nome.toLowerCase().includes(search.toLowerCase()) ||
           d.unidade.includes(search))
     );
+
+    if (cobrancaFilter !== "todos") {
+      list = list.filter((d) => {
+        const proc = procMap.get(`${d.unidade}|${d.nome}`);
+        const judicial = isJudicial(d, settings);
+        const extrajudicial = isExtrajudicial(d, settings);
+        if (cobrancaFilter === "judicial") {
+          return (proc && proc.tipo === "judicial") || (judicial && !proc);
+        }
+        return (proc && proc.tipo === "extrajudicial") || (extrajudicial && !proc);
+      });
+    }
+
     if (mode === "ranking") {
       list = [...list].sort((a, b) => b.total - a.total);
     }
     return list;
-  }, [debtors, search, minValue, mode]);
+  }, [debtors, search, minValue, mode, cobrancaFilter, procMap, settings]);
 
   return (
     <div className="space-y-4">
@@ -111,6 +134,16 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
             onChange={(e) => setMinValue(e.target.value)}
             className="w-44"
           />
+          <Select value={cobrancaFilter} onValueChange={(v) => setCobrancaFilter(v as CobrancaFilter)}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Tipo cobrança" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="judicial">Judicial</SelectItem>
+              <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
