@@ -24,6 +24,7 @@ import { Debtor, formatBRL } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
   indexByKey,
+  isExtrajudicial,
   isJudicial,
   listProcessos,
   type ProcessoJudicial,
