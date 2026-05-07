@@ -134,6 +134,16 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
             onChange={(e) => setMinValue(e.target.value)}
             className="w-44"
           />
+          <Select value={cobrancaFilter} onValueChange={(v) => setCobrancaFilter(v as CobrancaFilter)}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Tipo cobrança" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="judicial">Judicial</SelectItem>
+              <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
