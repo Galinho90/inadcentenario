@@ -103,6 +103,20 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
     return list;
   }, [debtors, search, minValue, mode, cobrancaFilter, procMap, settings]);
 
+  const judicialCount = useMemo(() => {
+    return debtors.filter((d) => {
+      const proc = procMap.get(`${d.unidade}|${d.nome}`);
+      return (proc && proc.tipo === "judicial") || isJudicial(d, settings);
+    }).length;
+  }, [debtors, procMap, settings]);
+
+  const extrajudicialCount = useMemo(() => {
+    return debtors.filter((d) => {
+      const proc = procMap.get(`${d.unidade}|${d.nome}`);
+      return (proc && proc.tipo === "extrajudicial") || isExtrajudicial(d, settings);
+    }).length;
+  }, [debtors, procMap, settings]);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -116,7 +130,7 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
             </TabsList>
           </Tabs>
         )}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -144,6 +158,16 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
               <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-destructive font-semibold">
+              <Gavel className="h-3 w-3" />
+              {judicialCount}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-orange-500 font-semibold">
+              <FileWarning className="h-3 w-3" />
+              {extrajudicialCount}
+            </span>
+          </div>
         </div>
       </div>
 
