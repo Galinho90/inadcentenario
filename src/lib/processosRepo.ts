@@ -7,13 +7,28 @@ export const JUDICIAL_MIN_BOLETOS = 3;
 /** @deprecated use settings — mantido apenas como fallback. */
 export const JUDICIAL_MIN_ATRASO_DIAS = 30;
 
+export type ProcessoTipo = "judicial" | "extrajudicial";
+
 export interface ProcessoJudicial {
   id: string;
   unidade: string;
   nome: string;
   numero_processo: string;
   observacoes: string | null;
+  tipo: ProcessoTipo;
   updated_at: string;
+}
+
+/** Devedor é elegível à cobrança extrajudicial (1-2 boletos com atraso > min). */
+export function isExtrajudicial(
+  d: Debtor,
+  opts?: { minBoletos?: number; minAtrasoDias?: number }
+): boolean {
+  const cfg = getJudicialSettings();
+  const minA = opts?.minAtrasoDias ?? cfg.minAtrasoDias;
+  const minB = opts?.minBoletos ?? cfg.minBoletos;
+  const overdue = countOverdueBoletos(d, minA);
+  return overdue >= 1 && overdue < minB;
 }
 
 /** Quantos boletos do devedor estão com atraso acima do limite configurado. */
@@ -47,6 +62,7 @@ export async function upsertProcesso(input: {
   nome: string;
   numero_processo: string;
   observacoes?: string | null;
+  tipo?: ProcessoTipo;
 }): Promise<void> {
   const { error } = await supabase
     .from("processos_judiciais")
@@ -56,7 +72,8 @@ export async function upsertProcesso(input: {
         nome: input.nome,
         numero_processo: input.numero_processo,
         observacoes: input.observacoes ?? null,
-      },
+        tipo: input.tipo ?? "judicial",
+      } as any,
       { onConflict: "unidade,nome" }
     );
   if (error) throw error;

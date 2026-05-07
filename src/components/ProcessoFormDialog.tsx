@@ -13,9 +13,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   deleteProcesso,
   upsertProcesso,
   type ProcessoJudicial,
+  type ProcessoTipo,
 } from "@/lib/processosRepo";
 import type { Debtor } from "@/lib/pdfParser";
 import { toast } from "sonner";
@@ -37,12 +45,14 @@ export function ProcessoFormDialog({
 }: Props) {
   const [numero, setNumero] = useState("");
   const [obs, setObs] = useState("");
+  const [tipo, setTipo] = useState<ProcessoTipo>("judicial");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setNumero(existing?.numero_processo ?? "");
       setObs(existing?.observacoes ?? "");
+      setTipo(existing?.tipo ?? "judicial");
     }
   }, [open, existing]);
 
@@ -50,7 +60,7 @@ export function ProcessoFormDialog({
     if (!debtor) return;
     const trimmed = numero.trim();
     if (!trimmed) {
-      toast.error("Informe o número do processo");
+      toast.error(tipo === "judicial" ? "Informe o número do processo" : "Informe a referência da cobrança");
       return;
     }
     if (trimmed.length > 100) {
@@ -64,13 +74,14 @@ export function ProcessoFormDialog({
         nome: debtor.nome,
         numero_processo: trimmed,
         observacoes: obs.trim().slice(0, 500) || null,
+        tipo,
       });
-      toast.success("Processo registrado");
+      toast.success(tipo === "judicial" ? "Processo registrado" : "Cobrança extrajudicial registrada");
       onOpenChange(false);
       onSaved?.();
     } catch (e) {
       console.error(e);
-      toast.error("Falha ao salvar processo");
+      toast.error("Falha ao salvar");
     } finally {
       setSaving(false);
     }
@@ -81,7 +92,7 @@ export function ProcessoFormDialog({
     setSaving(true);
     try {
       await deleteProcesso(debtor.unidade, debtor.nome);
-      toast.success("Processo removido");
+      toast.success("Registro removido");
       onOpenChange(false);
       onSaved?.();
     } catch (e) {
@@ -100,7 +111,7 @@ export function ProcessoFormDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Scale className="h-5 w-5" />
-                {existing ? "Editar processo judicial" : "Adicionar processo judicial"}
+                {existing ? "Editar cobrança" : "Adicionar cobrança"}
               </DialogTitle>
               <DialogDescription>
                 Unidade <span className="font-mono">{debtor.unidade}</span> ·{" "}
@@ -110,12 +121,30 @@ export function ProcessoFormDialog({
 
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label htmlFor="proc-numero">Número do processo *</Label>
+                <Label htmlFor="proc-tipo">Tipo de cobrança</Label>
+                <Select value={tipo} onValueChange={(v) => setTipo(v as ProcessoTipo)}>
+                  <SelectTrigger id="proc-tipo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="judicial">Judicial</SelectItem>
+                    <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="proc-numero">
+                  {tipo === "judicial" ? "Número do processo *" : "Referência / protocolo *"}
+                </Label>
                 <Input
                   id="proc-numero"
                   value={numero}
                   onChange={(e) => setNumero(e.target.value)}
-                  placeholder="ex: 0001234-56.2026.8.26.0100"
+                  placeholder={
+                    tipo === "judicial"
+                      ? "ex: 0001234-56.2026.8.26.0100"
+                      : "ex: NF-2026/001 ou protocolo"
+                  }
                   maxLength={100}
                   autoFocus
                 />
@@ -126,7 +155,11 @@ export function ProcessoFormDialog({
                   id="proc-obs"
                   value={obs}
                   onChange={(e) => setObs(e.target.value)}
-                  placeholder="Vara, advogado, andamento..."
+                  placeholder={
+                    tipo === "judicial"
+                      ? "Vara, advogado, andamento..."
+                      : "Cartório, notificação, prazo..."
+                  }
                   maxLength={500}
                   rows={3}
                 />

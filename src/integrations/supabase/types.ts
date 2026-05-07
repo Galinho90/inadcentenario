@@ -97,6 +97,7 @@ export type Database = {
           nome: string
           numero_processo: string
           observacoes: string | null
+          tipo: string
           unidade: string
           updated_at: string
         }
@@ -106,6 +107,7 @@ export type Database = {
           nome: string
           numero_processo: string
           observacoes?: string | null
+          tipo?: string
           unidade: string
           updated_at?: string
         }
@@ -115,6 +117,7 @@ export type Database = {
           nome?: string
           numero_processo?: string
           observacoes?: string | null
+          tipo?: string
           unidade?: string
           updated_at?: string
         }
