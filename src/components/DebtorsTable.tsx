@@ -27,7 +27,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning } from "lucide-react";
-import { Debtor, formatBRL } from "@/lib/pdfParser";
+import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
   indexByKey,
