@@ -23,7 +23,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { type Debtor, formatBRL } from "@/lib/pdfParser";
+import { type Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 
 interface Props {
   debtors: Debtor[];
