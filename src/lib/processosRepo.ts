@@ -35,7 +35,7 @@ export function isExtrajudicial(
 /** Quantos boletos do devedor estão com atraso acima do limite configurado. */
 export function countOverdueBoletos(d: Debtor, minAtrasoDias?: number): number {
   const min = minAtrasoDias ?? getJudicialSettings().minAtrasoDias;
-  return d.boletos.filter((b) => b.atraso > min).length;
+  return d.boletos.filter((b) => getBoletoAtraso(b) > min).length;
 }
 
 /** Devedor é elegível à cobrança judicial conforme as configurações. */
