@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Debtor } from "./pdfParser";
+import { getBoletoAtraso } from "./pdfParser";
 import { getJudicialSettings } from "./settings";
 
 /** @deprecated use settings — mantido apenas como fallback. */
