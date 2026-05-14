@@ -23,7 +23,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { type Debtor, formatBRL } from "@/lib/pdfParser";
+import { type Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 
 interface Props {
   debtors: Debtor[];
@@ -45,9 +45,9 @@ export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
     const avg = count > 0 ? total / count : 0;
     const allBoletos = debtors.flatMap((d) => d.boletos);
     const totalBoletos = allBoletos.length;
-    const maxAtraso = allBoletos.reduce((m, b) => Math.max(m, b.atraso), 0);
+    const maxAtraso = allBoletos.reduce((m, b) => Math.max(m, getBoletoAtraso(b)), 0);
     const criticos = debtors.filter((d) =>
-      d.boletos.some((b) => b.atraso > 90)
+      d.boletos.some((b) => getBoletoAtraso(b) > 90)
     ).length;
     return { total, count, avg, totalBoletos, maxAtraso, criticos };
   }, [debtors]);
@@ -61,7 +61,10 @@ export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
     return SEVERITY_BUCKETS.map((bucket) => {
       const value = debtors
         .flatMap((d) => d.boletos)
-        .filter((b) => b.atraso >= bucket.min && b.atraso <= bucket.max)
+        .filter((b) => {
+          const atraso = getBoletoAtraso(b);
+          return atraso >= bucket.min && atraso <= bucket.max;
+        })
         .reduce((acc, b) => acc + b.total, 0);
       return { name: bucket.label, value, color: bucket.color };
     }).filter((d) => d.value > 0);

@@ -27,7 +27,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning } from "lucide-react";
-import { Debtor, formatBRL } from "@/lib/pdfParser";
+import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
   indexByKey,
@@ -503,12 +503,12 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
                             <TableCell className="font-mono text-xs">
                               {b.vencimento}
                             </TableCell>
-                            <TableCell className="text-center">
+                          <TableCell className="text-center">
                               <Badge
-                                variant={b.atraso > 90 ? "destructive" : "secondary"}
+                                variant={getBoletoAtraso(b) > 90 ? "destructive" : "secondary"}
                                 className="font-mono"
                               >
-                                {b.atraso}d
+                                {getBoletoAtraso(b)}d
                               </Badge>
                             </TableCell>
                             <TableCell className="font-mono text-xs text-muted-foreground">
