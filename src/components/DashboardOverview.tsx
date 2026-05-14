@@ -61,7 +61,10 @@ export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
     return SEVERITY_BUCKETS.map((bucket) => {
       const value = debtors
         .flatMap((d) => d.boletos)
-        .filter((b) => b.atraso >= bucket.min && b.atraso <= bucket.max)
+        .filter((b) => {
+          const atraso = getBoletoAtraso(b);
+          return atraso >= bucket.min && atraso <= bucket.max;
+        })
         .reduce((acc, b) => acc + b.total, 0);
       return { name: bucket.label, value, color: bucket.color };
     }).filter((d) => d.value > 0);
