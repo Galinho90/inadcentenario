@@ -27,6 +27,35 @@ export function formatBRL(n: number): string {
   });
 }
 
+function parseVencimentoDate(vencimento: string): Date | null {
+  const parts = vencimento.split("/");
+  if (parts.length !== 3) return null;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  let year = parseInt(parts[2], 10);
+  if (year < 50) year += 2000;
+  else if (year < 100) year += 1900;
+  const date = new Date(year, month, day);
+  if (isNaN(date.getTime())) return null;
+  return date;
+}
+
+/** Calcula o atraso em dias com base na data de vencimento vs hoje. */
+export function calcAtrasoDias(vencimento: string): number {
+  const due = parseVencimentoDate(vencimento);
+  if (!due) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  const diffMs = today.getTime() - due.getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+}
+
+/** Retorna o atraso dinâmico de um boleto (atualiza conforme os dias passam). */
+export function getBoletoAtraso(b: Boleto): number {
+  return calcAtrasoDias(b.vencimento);
+}
+
 // Cabeçalho do bloco: "12 01 - MARIA JOSE DA SILVA"
 const HEADER_RE = /\b(\d{2}\s\d{2})\s*[-–]\s*(.+?)\s*$/;
 const BRL_RE = /([\d]{1,3}(?:\.\d{3})*,\d{2})/;
