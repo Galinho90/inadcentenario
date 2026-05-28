@@ -8,7 +8,7 @@ import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2, Settings, Upload, UserCircle } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, Settings, Upload, UserCircle } from "lucide-react";
 import { parseDebtors, type Debtor } from "@/lib/pdfParser";
 import { extractTextFromPdf } from "@/lib/pdfLoader";
 import {
@@ -136,14 +136,29 @@ const Index = () => {
                   "Nenhum relatório enviado ainda."
                 )}
               </div>
-              <Button
-                variant={showUpload ? "ghost" : "default"}
-                size="sm"
-                onClick={() => setShowUpload((v) => !v)}
-              >
-                <Upload className="h-4 w-4 mr-1.5" />
-                {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Enviar PDF"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await refreshCurrent();
+                    setHistoryKey((k) => k + 1);
+                    toast.success("Dados atualizados");
+                  }}
+                  disabled={loadingCurrent}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1.5 ${loadingCurrent ? "animate-spin" : ""}`} />
+                  Atualizar agora
+                </Button>
+                <Button
+                  variant={showUpload ? "ghost" : "default"}
+                  size="sm"
+                  onClick={() => setShowUpload((v) => !v)}
+                >
+                  <Upload className="h-4 w-4 mr-1.5" />
+                  {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Enviar PDF"}
+                </Button>
+              </div>
             </div>
 
             {(showUpload || !current) && !loadingCurrent && (
