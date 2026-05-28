@@ -8,7 +8,7 @@ import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2, Settings, Upload, UserCircle } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, Settings, Upload, UserCircle } from "lucide-react";
 import { parseDebtors, type Debtor } from "@/lib/pdfParser";
 import { extractTextFromPdf } from "@/lib/pdfLoader";
 import {
