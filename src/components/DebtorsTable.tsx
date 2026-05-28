@@ -49,10 +49,11 @@ export function DebtorsTable({ debtors }: Props) {
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
+  const [minBoletos, setMinBoletos] = useState("");
+  const [maxBoletos, setMaxBoletos] = useState("");
   const [selected, setSelected] = useState<Debtor | null>(null);
   const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
-
   const procMap = useMemo(() => indexByKey(processos), [processos]);
 
   const refreshProcessos = useCallback(async () => {
