@@ -8,7 +8,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -41,23 +40,15 @@ import { ProcessoFormDialog } from "./ProcessoFormDialog";
 
 interface Props {
   debtors: Debtor[];
-  /** Quando informado, oculta as abas internas e usa este modo. */
-  mode?: Mode;
-  /** Quando true, oculta as abas internas (útil quando o pai controla o modo). */
-  hideTabs?: boolean;
 }
 
-type Mode = "lista" | "ranking";
+type CobrancaFilter = "todos" | "judicial" | "extrajudicial";
 
-  type CobrancaFilter = "todos" | "judicial" | "extrajudicial";
-
-export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
+export function DebtorsTable({ debtors }: Props) {
   const settings = useJudicialSettings();
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
-  const [internalMode, setInternalMode] = useState<Mode>("lista");
-  const mode = modeProp ?? internalMode;
   const [selected, setSelected] = useState<Debtor | null>(null);
   const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
@@ -97,11 +88,8 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
       });
     }
 
-    if (mode === "ranking") {
-      list = [...list].sort((a, b) => b.total - a.total);
-    }
     return list;
-  }, [debtors, search, minValue, mode, cobrancaFilter, procMap, settings]);
+  }, [debtors, search, minValue, cobrancaFilter, procMap, settings]);
 
   const judicialCount = useMemo(() => {
     return debtors.filter((d) => {
@@ -120,16 +108,6 @@ export function DebtorsTable({ debtors, mode: modeProp, hideTabs }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        {hideTabs ? (
-          <div />
-        ) : (
-          <Tabs value={mode} onValueChange={(v) => setInternalMode(v as Mode)}>
-            <TabsList>
-              <TabsTrigger value="lista">Lista completa</TabsTrigger>
-              <TabsTrigger value="ranking">Ranking</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        )}
         <div className="flex gap-2 flex-wrap items-center">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
