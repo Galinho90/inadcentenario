@@ -92,7 +92,7 @@ export function DebtorsTable({ debtors }: Props) {
 
     if (!isNaN(minB) || !isNaN(maxB)) {
       list = list.filter((d) => {
-        const count = countOverdueBoletos(d, settings.minAtrasoDias);
+        const count = d.boletos.length;
         if (!isNaN(minB) && count < minB) return false;
         if (!isNaN(maxB) && count > maxB) return false;
         return true;
