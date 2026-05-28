@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Settings, Trophy } from "lucide-react";
+import { ArrowLeft, Loader2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DashboardOverview } from "@/components/DashboardOverview";
 import { DebtorsTable } from "@/components/DebtorsTable";
 import { JudicialAlert } from "@/components/JudicialAlert";
@@ -17,7 +16,6 @@ const Relatorio = () => {
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"lista" | "ranking">("lista");
 
   useEffect(() => {
     if (!id) return;
@@ -83,24 +81,7 @@ const Relatorio = () => {
           <>
             <DashboardOverview debtors={debtors} fileName={summary?.nome_arquivo} />
             <JudicialAlert debtors={debtors} editable={true} />
-
-            <Tabs value={tab} onValueChange={(v) => setTab(v as "lista" | "ranking")}>
-              <TabsList>
-                <TabsTrigger value="lista">Lista</TabsTrigger>
-                <TabsTrigger value="ranking">
-                  <Trophy className="h-3.5 w-3.5 mr-1.5" />
-                  Ranking
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="lista" className="mt-6">
-                <DebtorsTable debtors={debtors} mode="lista" hideTabs />
-              </TabsContent>
-
-              <TabsContent value="ranking" className="mt-6">
-                <DebtorsTable debtors={debtors} mode="ranking" hideTabs />
-              </TabsContent>
-            </Tabs>
+            <DebtorsTable debtors={debtors} />
           </>
         )}
       </main>
