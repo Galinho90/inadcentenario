@@ -101,7 +101,6 @@ export function DebtorsTable({ debtors }: Props) {
 
     return list;
   }, [debtors, search, minValue, cobrancaFilter, procMap, settings, minBoletos, maxBoletos]);
-  }, [debtors, search, minValue, cobrancaFilter, procMap, settings]);
 
   const judicialCount = useMemo(() => {
     return debtors.filter((d) => {
