@@ -49,10 +49,11 @@ export function DebtorsTable({ debtors }: Props) {
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
+  const [minBoletos, setMinBoletos] = useState("");
+  const [maxBoletos, setMaxBoletos] = useState("");
   const [selected, setSelected] = useState<Debtor | null>(null);
   const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
-
   const procMap = useMemo(() => indexByKey(processos), [processos]);
 
   const refreshProcessos = useCallback(async () => {
@@ -66,9 +67,10 @@ export function DebtorsTable({ debtors }: Props) {
   useEffect(() => {
     refreshProcessos();
   }, [refreshProcessos]);
-
   const filtered = useMemo(() => {
     const min = parseFloat(minValue.replace(",", ".")) || 0;
+    const minB = parseInt(minBoletos, 10);
+    const maxB = parseInt(maxBoletos, 10);
     let list = debtors.filter(
       (d) =>
         d.total >= min &&
@@ -88,8 +90,17 @@ export function DebtorsTable({ debtors }: Props) {
       });
     }
 
+    if (!isNaN(minB) || !isNaN(maxB)) {
+      list = list.filter((d) => {
+        const count = countOverdueBoletos(d, settings.minAtrasoDias);
+        if (!isNaN(minB) && count < minB) return false;
+        if (!isNaN(maxB) && count > maxB) return false;
+        return true;
+      });
+    }
+
     return list;
-  }, [debtors, search, minValue, cobrancaFilter, procMap, settings]);
+  }, [debtors, search, minValue, cobrancaFilter, procMap, settings, minBoletos, maxBoletos]);
 
   const judicialCount = useMemo(() => {
     return debtors.filter((d) => {
@@ -136,6 +147,22 @@ export function DebtorsTable({ debtors }: Props) {
               <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
             </SelectContent>
           </Select>
+          <Input
+            type="number"
+            min={0}
+            placeholder="Min. boletos atrasados"
+            value={minBoletos}
+            onChange={(e) => setMinBoletos(e.target.value)}
+            className="w-44"
+          />
+          <Input
+            type="number"
+            min={0}
+            placeholder="Máx. boletos atrasados"
+            value={maxBoletos}
+            onChange={(e) => setMaxBoletos(e.target.value)}
+            className="w-44"
+          />
           <div className="flex items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-destructive font-semibold">
               <Gavel className="h-3 w-3" />
