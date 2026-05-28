@@ -136,14 +136,29 @@ const Index = () => {
                   "Nenhum relatório enviado ainda."
                 )}
               </div>
-              <Button
-                variant={showUpload ? "ghost" : "default"}
-                size="sm"
-                onClick={() => setShowUpload((v) => !v)}
-              >
-                <Upload className="h-4 w-4 mr-1.5" />
-                {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Enviar PDF"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await refreshCurrent();
+                    setHistoryKey((k) => k + 1);
+                    toast.success("Dados atualizados");
+                  }}
+                  disabled={loadingCurrent}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1.5 ${loadingCurrent ? "animate-spin" : ""}`} />
+                  Atualizar agora
+                </Button>
+                <Button
+                  variant={showUpload ? "ghost" : "default"}
+                  size="sm"
+                  onClick={() => setShowUpload((v) => !v)}
+                >
+                  <Upload className="h-4 w-4 mr-1.5" />
+                  {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Enviar PDF"}
+                </Button>
+              </div>
             </div>
 
             {(showUpload || !current) && !loadingCurrent && (
