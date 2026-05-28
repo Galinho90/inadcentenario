@@ -67,9 +67,10 @@ export function DebtorsTable({ debtors }: Props) {
   useEffect(() => {
     refreshProcessos();
   }, [refreshProcessos]);
-
   const filtered = useMemo(() => {
     const min = parseFloat(minValue.replace(",", ".")) || 0;
+    const minB = parseInt(minBoletos, 10);
+    const maxB = parseInt(maxBoletos, 10);
     let list = debtors.filter(
       (d) =>
         d.total >= min &&
@@ -89,7 +90,17 @@ export function DebtorsTable({ debtors }: Props) {
       });
     }
 
+    if (!isNaN(minB) || !isNaN(maxB)) {
+      list = list.filter((d) => {
+        const count = countOverdueBoletos(d, settings.minAtrasoDias);
+        if (!isNaN(minB) && count < minB) return false;
+        if (!isNaN(maxB) && count > maxB) return false;
+        return true;
+      });
+    }
+
     return list;
+  }, [debtors, search, minValue, cobrancaFilter, procMap, settings, minBoletos, maxBoletos]);
   }, [debtors, search, minValue, cobrancaFilter, procMap, settings]);
 
   const judicialCount = useMemo(() => {
