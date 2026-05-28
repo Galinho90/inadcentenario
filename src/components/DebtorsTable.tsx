@@ -147,6 +147,22 @@ export function DebtorsTable({ debtors }: Props) {
               <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
             </SelectContent>
           </Select>
+          <Input
+            type="number"
+            min={0}
+            placeholder="Min. boletos atrasados"
+            value={minBoletos}
+            onChange={(e) => setMinBoletos(e.target.value)}
+            className="w-44"
+          />
+          <Input
+            type="number"
+            min={0}
+            placeholder="Máx. boletos atrasados"
+            value={maxBoletos}
+            onChange={(e) => setMaxBoletos(e.target.value)}
+            className="w-44"
+          />
           <div className="flex items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-destructive font-semibold">
               <Gavel className="h-3 w-3" />
