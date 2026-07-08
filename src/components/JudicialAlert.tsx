@@ -261,6 +261,16 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="chave">Chave do processo (opcional)</Label>
+                  <Input
+                    id="chave"
+                    value={chave}
+                    onChange={(e) => setChave(e.target.value)}
+                    placeholder="ex: chave de acesso do e-SAJ / PJe"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="obs">Observações (opcional)</Label>
                   <Textarea
                     id="obs"
