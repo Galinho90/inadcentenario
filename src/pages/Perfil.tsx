@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { ArrowLeft, KeyRound, LogOut, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Perfil() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -53,8 +54,13 @@ export default function Perfil() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(error.message || "Falha ao sair");
+      return;
+    }
     toast.success("Você saiu da conta.");
+    navigate("/", { replace: true });
   };
 
   return (

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Wallet,
   Users,
@@ -58,25 +57,35 @@ export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
   );
 
   const severityData = useMemo(() => {
-    return SEVERITY_BUCKETS.map((bucket) => {
-      const value = debtors
-        .flatMap((d) => d.boletos)
-        .filter((b) => {
-          const atraso = getBoletoAtraso(b);
-          return atraso >= bucket.min && atraso <= bucket.max;
-        })
-        .reduce((acc, b) => acc + b.total, 0);
-      return { name: bucket.label, value, color: bucket.color };
-    }).filter((d) => d.value > 0);
+    const totals = SEVERITY_BUCKETS.map(() => 0);
+    for (const d of debtors) {
+      for (const b of d.boletos) {
+        const atraso = getBoletoAtraso(b);
+        for (let i = 0; i < SEVERITY_BUCKETS.length; i++) {
+          const bucket = SEVERITY_BUCKETS[i];
+          if (atraso >= bucket.min && atraso <= bucket.max) {
+            totals[i] += b.total;
+            break;
+          }
+        }
+      }
+    }
+    return SEVERITY_BUCKETS.map((bucket, i) => ({
+      name: bucket.label,
+      value: totals[i],
+      color: bucket.color,
+    })).filter((d) => d.value > 0);
   }, [debtors]);
 
-  const topChartData = top5.map((d) => ({
-    nome: d.nome.length > 18 ? d.nome.slice(0, 16) + "…" : d.nome,
-    unidade: d.unidade,
-    total: d.total,
-  }));
-
-  const maxTop = Math.max(...top5.map((d) => d.total), 1);
+  const topChartData = useMemo(
+    () =>
+      top5.map((d) => ({
+        nome: d.nome.length > 18 ? d.nome.slice(0, 16) + "…" : d.nome,
+        unidade: d.unidade,
+        total: d.total,
+      })),
+    [top5]
+  );
 
   return (
     <div className="space-y-6">

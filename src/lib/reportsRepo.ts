@@ -108,8 +108,9 @@ export async function loadReport(
     .from("relatorios")
     .select("id, nome_arquivo, total_geral, quantidade_inadimplentes, processado_em")
     .eq("id", id)
-    .single();
-  if (relErr || !rel) throw relErr ?? new Error("Relatório não encontrado");
+    .maybeSingle();
+  if (relErr) throw relErr;
+  if (!rel) throw new Error("Relatório não encontrado");
 
   const { data: inad, error: inadErr } = await supabase
     .from("inadimplentes")
