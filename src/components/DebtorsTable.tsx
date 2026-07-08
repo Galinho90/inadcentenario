@@ -25,7 +25,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash } from "lucide-react";
 import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
@@ -260,6 +260,14 @@ export function DebtorsTable({ debtors }: Props) {
                             <Gavel className="h-3 w-3" />
                             Judicial
                           </Badge>
+                          <Badge
+                            variant="outline"
+                            className="gap-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                            title="Processo cadastrado"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                            Com nº processo
+                          </Badge>
                           <span className="font-mono text-xs text-muted-foreground">
                             {proc!.numero_processo}
                           </span>
@@ -287,6 +295,14 @@ export function DebtorsTable({ debtors }: Props) {
                           >
                             <AlertTriangle className="h-3 w-3" />
                             Cobrar judicial
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="gap-1 border-destructive/50 text-destructive bg-destructive/10"
+                            title="Ainda não há número de processo cadastrado"
+                          >
+                            <CircleSlash className="h-3 w-3" />
+                            Sem nº processo
                           </Badge>
                           <Button
                             size="sm"
