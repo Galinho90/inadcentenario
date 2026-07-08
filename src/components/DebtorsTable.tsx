@@ -156,36 +156,36 @@ export function DebtorsTable({ debtors }: Props) {
     <div className="space-y-4">
       <div className="rounded-lg border bg-card p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Linha 1: busca + contadores + ações */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative w-full sm:flex-1 min-w-0">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row sm:items-stretch gap-3">
+          <div className="relative w-full sm:flex-1 min-w-0 h-10">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Buscar por nome ou unidade..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-8"
+              className="pl-8 pr-8 h-10"
             />
             {search && (
               <button
                 type="button"
                 aria-label="Limpar busca"
                 onClick={() => setSearch("")}
-                className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
+          <div className="flex items-center gap-2 flex-wrap sm:shrink-0 sm:h-10">
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs text-destructive font-semibold whitespace-nowrap"
+              className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 h-7 text-xs text-destructive font-semibold whitespace-nowrap"
               title="Total de casos judiciais"
             >
               <Gavel className="h-3 w-3" />
               {judicialCount} judicial
             </span>
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs text-orange-500 font-semibold whitespace-nowrap"
+              className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 h-7 text-xs text-orange-500 font-semibold whitespace-nowrap"
               title="Total de casos extrajudiciais"
             >
               <FileWarning className="h-3 w-3" />
@@ -206,12 +206,14 @@ export function DebtorsTable({ debtors }: Props) {
         </div>
 
 
+
+
         {/* Linha 2: filtros avançados agrupados */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <SlidersHorizontal className="h-3 w-3" />
-              Valor mínimo (R$)
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <SlidersHorizontal className="h-3 w-3 shrink-0" />
+              <span className="truncate">Valor mínimo (R$)</span>
             </label>
             <Input
               type="text"
@@ -219,15 +221,16 @@ export function DebtorsTable({ debtors }: Props) {
               placeholder="Ex: 500,00"
               value={minValue}
               onChange={(e) => setMinValue(e.target.value)}
+              className="h-10"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Tipo de cobrança
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <span className="truncate">Tipo de cobrança</span>
             </label>
             <Select value={cobrancaFilter} onValueChange={(v) => setCobrancaFilter(v as CobrancaFilter)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -248,13 +251,13 @@ export function DebtorsTable({ debtors }: Props) {
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Scale className="h-3 w-3" />
-              Judiciais: nº processo
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <Scale className="h-3 w-3 shrink-0" />
+              <span className="truncate">Judiciais: nº processo</span>
             </label>
             <Select value={processoFilter} onValueChange={(v) => setProcessoFilter(v as ProcessoFilter)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -275,30 +278,33 @@ export function DebtorsTable({ debtors }: Props) {
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Boletos atrasados (min – máx)
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <span className="truncate">Boletos atrasados (min – máx)</span>
             </label>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 h-10">
               <Input
                 type="number"
                 min={0}
                 placeholder="Min"
                 value={minBoletos}
                 onChange={(e) => setMinBoletos(e.target.value)}
+                className="h-10"
               />
-              <span className="text-muted-foreground text-sm">–</span>
+              <span className="text-muted-foreground text-sm shrink-0">–</span>
               <Input
                 type="number"
                 min={0}
                 placeholder="Máx"
                 value={maxBoletos}
                 onChange={(e) => setMaxBoletos(e.target.value)}
+                className="h-10"
               />
             </div>
           </div>
         </div>
       </div>
+
 
       <VirtualDebtorRows
         rows={filtered}
