@@ -408,12 +408,14 @@ export function DebtorsTable({ debtors }: Props) {
                           </div>
                           {ativo ? (
                             <div className="text-sm space-y-2">
-                              <p className="text-muted-foreground">
-                                {isExt ? "Referência" : "Processo"}:{" "}
+                              <p className="text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                <span>{isExt ? "Referência" : "Processo"}:</span>
                                 <strong className="font-mono text-foreground">
                                   {proc!.numero_processo}
                                 </strong>
+                                <CopyButton value={proc!.numero_processo} label={isExt ? "número da referência" : "número do processo"} />
                               </p>
+
                               {proc!.chave_processo && (
                                 <p className="text-muted-foreground">
                                   Chave:{" "}
