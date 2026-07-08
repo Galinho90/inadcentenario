@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Gavel, AlertTriangle, Scale, Loader2, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -20,10 +20,10 @@ import {
   deleteProcesso,
   indexByKey,
   isJudicial,
-  listProcessos,
   upsertProcesso,
-  type ProcessoJudicial,
 } from "@/lib/processosRepo";
+import { useProcessos, queryKeys } from "@/lib/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { useJudicialSettings } from "@/lib/settings";
 import { toast } from "sonner";
 
@@ -35,8 +35,8 @@ interface Props {
 
 export function JudicialAlert({ debtors, editable = false }: Props) {
   const settings = useJudicialSettings();
-  const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
-  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+  const { data: processos = [], isLoading: loading } = useProcessos();
   const [editing, setEditing] = useState<Debtor | null>(null);
   const [numero, setNumero] = useState("");
   const [chave, setChave] = useState("");
@@ -51,20 +51,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
 
   const map = useMemo(() => indexByKey(processos), [processos]);
 
-  async function refresh() {
-    setLoading(true);
-    try {
-      setProcessos(await listProcessos());
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    refresh();
-  }, []);
+  const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.processos });
 
   function openEdit(d: Debtor) {
     const existing = map.get(`${d.unidade}|${d.nome}`);
@@ -73,6 +60,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
     setChave(existing?.chave_processo ?? "");
     setObs(existing?.observacoes ?? "");
   }
+
 
   async function handleSave() {
     if (!editing) return;
@@ -96,7 +84,8 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
       });
       toast.success("Processo registrado");
       setEditing(null);
-      await refresh();
+      refresh();
+
     } catch (e) {
       console.error(e);
       toast.error("Falha ao salvar processo");
@@ -112,7 +101,8 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
       await deleteProcesso(editing.unidade, editing.nome);
       toast.success("Processo removido");
       setEditing(null);
-      await refresh();
+      refresh();
+
     } catch (e) {
       console.error(e);
       toast.error("Falha ao remover");
