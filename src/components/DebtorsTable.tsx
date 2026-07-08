@@ -648,8 +648,9 @@ function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: Vi
                               <FileWarning className="h-3 w-3" />
                               Extrajudicial
                             </Badge>
-                            <span className="font-mono text-xs text-muted-foreground">
+                            <span className="font-mono text-xs text-muted-foreground inline-flex items-center gap-1">
                               {proc!.numero_processo}
+                              <CopyButton value={proc!.numero_processo} label="número da referência" />
                             </span>
                           </>
                         )}
