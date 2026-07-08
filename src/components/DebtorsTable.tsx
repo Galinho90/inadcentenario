@@ -586,9 +586,9 @@ function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: Vi
         <div
           ref={parentRef}
           className="overflow-auto"
-          style={{ maxHeight: "70vh", contain: "layout paint style" }}
+          style={{ height: "min(70vh, 900px)", contain: "layout paint style" }}
         >
-          <Table style={{ height: totalSize + paddingTop + paddingBottom }}>
+          <Table style={{ height: totalSize }}>
             <TableBody>
               {paddingTop > 0 && (
                 <tr aria-hidden="true">
