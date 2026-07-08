@@ -301,6 +301,15 @@ export function DebtorsTable({ debtors }: Props) {
       </div>
 
 
+      <VirtualizedDebtorsTable
+        rows={filtered}
+        totalRows={debtors.length}
+        procMap={procMap}
+        settings={settings}
+        onSelect={setSelected}
+        onEditProc={setEditingProc}
+      />
+      {false && (
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
