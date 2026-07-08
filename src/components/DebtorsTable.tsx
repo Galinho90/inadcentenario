@@ -290,7 +290,7 @@ export function DebtorsTable({ debtors }: Props) {
           </div>
         </div>
       </div>
-      </div>
+
 
       <div className="rounded-lg border bg-card">
         <Table>
