@@ -38,6 +38,7 @@ import { useProcessos, queryKeys } from "@/lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
+import { CopyButton } from "./CopyButton";
 
 interface Props {
   debtors: Debtor[];
