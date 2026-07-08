@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthGuard } from "@/components/AuthGuard";
 import Index from "./pages/Index.tsx";
-import Relatorio from "./pages/Relatorio.tsx";
 import Configuracoes from "./pages/Configuracoes.tsx";
 import Perfil from "./pages/Perfil.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -21,7 +20,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/relatorio/:id" element={<Relatorio />} />
+            
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="*" element={<NotFound />} />

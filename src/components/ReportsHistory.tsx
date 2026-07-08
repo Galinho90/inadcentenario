@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trash2, FileText, Eye, Loader2 } from "lucide-react";
+import { Trash2, FileText, Loader2 } from "lucide-react";
 import { listReports, deleteReport, type ReportSummary } from "@/lib/reportsRepo";
 import { formatBRL } from "@/lib/pdfParser";
 import { toast } from "sonner";
@@ -100,16 +99,6 @@ export function ReportsHistory({ refreshKey }: Props) {
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    asChild
-                    title="Abrir"
-                  >
-                    <Link to={`/relatorio/${r.id}`}>
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
