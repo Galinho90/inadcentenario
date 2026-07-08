@@ -16,11 +16,43 @@ export function CopyButton({ value, label = "Número do processo", className }: 
     e.preventDefault();
     e.stopPropagation();
     if (!value) return;
-    try {
-      await navigator.clipboard.writeText(value);
+
+    const done = () => {
       setCopied(true);
       toast.success(`${label} copiado`);
       setTimeout(() => setCopied(false), 1500);
+    };
+
+    // Método moderno (requer HTTPS ou permissão clipboard-write no iframe)
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        done();
+        return;
+      }
+    } catch {
+      // Cai no fallback abaixo
+    }
+
+    // Fallback: textarea + execCommand — funciona em iframes sem permissão de clipboard
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "0";
+      ta.style.left = "0";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (ok) {
+        done();
+        return;
+      }
+      throw new Error("execCommand copy failed");
     } catch {
       toast.error("Não foi possível copiar");
     }
