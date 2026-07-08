@@ -1,4 +1,5 @@
-import { useCallback, useDeferredValue, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Table,
   TableBody,
@@ -299,185 +300,14 @@ export function DebtorsTable({ debtors }: Props) {
         </div>
       </div>
 
+      <VirtualDebtorRows
+        rows={filtered}
+        procMap={procMap}
+        settings={settings}
+        onSelect={setSelected}
+        onEditProc={setEditingProc}
+      />
 
-      <div className="rounded-lg border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Unidade</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead className="text-center">Boletos</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  Nenhum registro encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((d, i) => {
-                const judicial = isJudicial(d, settings);
-                const extrajudicial = isExtrajudicial(d, settings);
-                const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
-                const proc = procMap.get(`${d.unidade}|${d.nome}`);
-                const isJudicialAtivo = !!proc && proc.tipo === "judicial";
-                const isExtrajudicialAtivo = !!proc && proc.tipo === "extrajudicial";
-                const podeCobrarJudicial = judicial && !proc;
-                const podeCobrarExtrajudicial = extrajudicial && !proc;
-                return (
-                <TableRow
-                  key={`${d.unidade}-${d.nome}-${i}`}
-                  className={
-                    "cursor-pointer hover:bg-accent/60 " +
-                    (isJudicialAtivo
-                      ? "bg-destructive/5 hover:bg-destructive/10"
-                      : isExtrajudicialAtivo
-                      ? "bg-orange-500/5 hover:bg-orange-500/10"
-                      : podeCobrarJudicial
-                      ? "bg-warning/5 hover:bg-warning/10"
-                      : podeCobrarExtrajudicial
-                      ? "bg-orange-500/5 hover:bg-orange-500/10"
-                      : "")
-                  }
-                  onClick={() => setSelected(d)}
-                >
-                  <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                  <TableCell className="font-mono">{d.unidade}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span>{d.nome}</span>
-                      {isJudicialAtivo && (
-                        <>
-                          <Badge
-                            className="gap-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            title={`Processo ${proc!.numero_processo}`}
-                          >
-                            <Gavel className="h-3 w-3" />
-                            Judicial
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="gap-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                            title="Processo cadastrado"
-                          >
-                            <CheckCircle2 className="h-3 w-3" />
-                            Com nº processo
-                          </Badge>
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {proc!.numero_processo}
-                          </span>
-                        </>
-                      )}
-                      {isExtrajudicialAtivo && (
-                        <>
-                          <Badge
-                            className="gap-1 bg-orange-500 text-white hover:bg-orange-600"
-                            title={`Cobrança extrajudicial - ${proc!.numero_processo}`}
-                          >
-                            <FileWarning className="h-3 w-3" />
-                            Extrajudicial
-                          </Badge>
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {proc!.numero_processo}
-                          </span>
-                        </>
-                      )}
-                      {podeCobrarJudicial && (
-                        <>
-                          <Badge
-                            className="gap-1 bg-warning text-warning-foreground hover:bg-warning/90 animate-pulse"
-                            title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias`}
-                          >
-                            <AlertTriangle className="h-3 w-3" />
-                            Cobrar judicial
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="gap-1 border-destructive/50 text-destructive bg-destructive/10"
-                            title="Ainda não há número de processo cadastrado"
-                          >
-                            <CircleSlash className="h-3 w-3" />
-                            Sem nº processo
-                          </Badge>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingProc(d);
-                            }}
-                          >
-                            <Scale className="h-3 w-3 mr-1" />
-                            Adicionar processo
-                          </Button>
-                        </>
-                      )}
-                      {podeCobrarExtrajudicial && (
-                        <>
-                          <Badge
-                            className="gap-1 bg-orange-500/80 text-white hover:bg-orange-500 animate-pulse"
-                            title={`${overdueCount} boleto(s) com mais de ${settings.minAtrasoDias} dias`}
-                          >
-                            <FileWarning className="h-3 w-3" />
-                            Cobrar extrajudicial
-                          </Badge>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-6 px-2 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingProc(d);
-                            }}
-                          >
-                            <FileWarning className="h-3 w-3 mr-1" />
-                            Adicionar cobrança
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge
-                      variant={
-                        isJudicialAtivo
-                          ? "destructive"
-                          : isExtrajudicialAtivo
-                          ? "outline"
-                          : podeCobrarJudicial
-                          ? "outline"
-                          : "secondary"
-                      }
-                      className={
-                        isExtrajudicialAtivo
-                          ? "border-orange-500 text-orange-500"
-                          : podeCobrarJudicial
-                          ? "border-warning text-warning"
-                          : ""
-                      }
-                    >
-                      {d.boletos.length}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatBRL(d.total)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <ChevronRight className="h-4 w-4" />
-                  </TableCell>
-                </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
 
       <p className="text-xs text-muted-foreground">
         Exibindo {filtered.length} de {debtors.length} registros — clique em uma linha
@@ -693,6 +523,239 @@ export function DebtorsTable({ debtors }: Props) {
         onOpenChange={(o) => !o && setEditingProc(null)}
         onSaved={refreshProcessos}
       />
+    </div>
+  );
+}
+
+interface VirtualRowsProps {
+  rows: Debtor[];
+  procMap: ReturnType<typeof indexByKey>;
+  settings: ReturnType<typeof useJudicialSettings>;
+  onSelect: (d: Debtor) => void;
+  onEditProc: (d: Debtor) => void;
+}
+
+function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: VirtualRowsProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 56,
+    overscan: 10,
+    measureElement:
+      typeof window !== "undefined" && !navigator.userAgent.includes("Firefox")
+        ? (el) => el?.getBoundingClientRect().height
+        : undefined,
+  });
+
+  const items = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
+  const paddingTop = items.length > 0 ? items[0].start : 0;
+  const paddingBottom = items.length > 0 ? totalSize - items[items.length - 1].end : 0;
+
+  return (
+    <div className="rounded-lg border bg-card">
+      {/* Header fixo */}
+      <div className="border-b">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">#</TableHead>
+              <TableHead>Unidade</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead className="text-center">Boletos</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="w-10"></TableHead>
+            </TableRow>
+          </TableHeader>
+        </Table>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="text-center text-muted-foreground py-8 text-sm">
+          Nenhum registro encontrado.
+        </div>
+      ) : (
+        <div
+          ref={parentRef}
+          className="overflow-auto"
+          style={{ maxHeight: "70vh", contain: "strict" }}
+        >
+          <Table style={{ height: totalSize + paddingTop + paddingBottom }}>
+            <TableBody>
+              {paddingTop > 0 && (
+                <tr aria-hidden="true">
+                  <td colSpan={6} style={{ height: paddingTop, padding: 0 }} />
+                </tr>
+              )}
+              {items.map((vi) => {
+                const d = rows[vi.index];
+                const i = vi.index;
+                const judicial = isJudicial(d, settings);
+                const extrajudicial = isExtrajudicial(d, settings);
+                const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
+                const proc = procMap.get(`${d.unidade}|${d.nome}`);
+                const isJudicialAtivo = !!proc && proc.tipo === "judicial";
+                const isExtrajudicialAtivo = !!proc && proc.tipo === "extrajudicial";
+                const podeCobrarJudicial = judicial && !proc;
+                const podeCobrarExtrajudicial = extrajudicial && !proc;
+                return (
+                  <TableRow
+                    key={`${d.unidade}-${d.nome}-${i}`}
+                    data-index={vi.index}
+                    ref={virtualizer.measureElement}
+                    className={
+                      "cursor-pointer hover:bg-accent/60 " +
+                      (isJudicialAtivo
+                        ? "bg-destructive/5 hover:bg-destructive/10"
+                        : isExtrajudicialAtivo
+                        ? "bg-orange-500/5 hover:bg-orange-500/10"
+                        : podeCobrarJudicial
+                        ? "bg-warning/5 hover:bg-warning/10"
+                        : podeCobrarExtrajudicial
+                        ? "bg-orange-500/5 hover:bg-orange-500/10"
+                        : "")
+                    }
+                    onClick={() => onSelect(d)}
+                  >
+                    <TableCell className="w-12 text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell className="font-mono">{d.unidade}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>{d.nome}</span>
+                        {isJudicialAtivo && (
+                          <>
+                            <Badge
+                              className="gap-1 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              title={`Processo ${proc!.numero_processo}`}
+                            >
+                              <Gavel className="h-3 w-3" />
+                              Judicial
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="gap-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                              title="Processo cadastrado"
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              Com nº processo
+                            </Badge>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {proc!.numero_processo}
+                            </span>
+                          </>
+                        )}
+                        {isExtrajudicialAtivo && (
+                          <>
+                            <Badge
+                              className="gap-1 bg-orange-500 text-white hover:bg-orange-600"
+                              title={`Cobrança extrajudicial - ${proc!.numero_processo}`}
+                            >
+                              <FileWarning className="h-3 w-3" />
+                              Extrajudicial
+                            </Badge>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {proc!.numero_processo}
+                            </span>
+                          </>
+                        )}
+                        {podeCobrarJudicial && (
+                          <>
+                            <Badge
+                              className="gap-1 bg-warning text-warning-foreground hover:bg-warning/90 animate-pulse"
+                              title={`${overdueCount} boletos com mais de ${settings.minAtrasoDias} dias`}
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              Cobrar judicial
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="gap-1 border-destructive/50 text-destructive bg-destructive/10"
+                              title="Ainda não há número de processo cadastrado"
+                            >
+                              <CircleSlash className="h-3 w-3" />
+                              Sem nº processo
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditProc(d);
+                              }}
+                            >
+                              <Scale className="h-3 w-3 mr-1" />
+                              Adicionar processo
+                            </Button>
+                          </>
+                        )}
+                        {podeCobrarExtrajudicial && (
+                          <>
+                            <Badge
+                              className="gap-1 bg-orange-500/80 text-white hover:bg-orange-500 animate-pulse"
+                              title={`${overdueCount} boleto(s) com mais de ${settings.minAtrasoDias} dias`}
+                            >
+                              <FileWarning className="h-3 w-3" />
+                              Cobrar extrajudicial
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditProc(d);
+                              }}
+                            >
+                              <FileWarning className="h-3 w-3 mr-1" />
+                              Adicionar cobrança
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={
+                          isJudicialAtivo
+                            ? "destructive"
+                            : isExtrajudicialAtivo
+                            ? "outline"
+                            : podeCobrarJudicial
+                            ? "outline"
+                            : "secondary"
+                        }
+                        className={
+                          isExtrajudicialAtivo
+                            ? "border-orange-500 text-orange-500"
+                            : podeCobrarJudicial
+                            ? "border-warning text-warning"
+                            : ""
+                        }
+                      >
+                        {d.boletos.length}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatBRL(d.total)}
+                    </TableCell>
+                    <TableCell className="w-10 text-muted-foreground">
+                      <ChevronRight className="h-4 w-4" />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {paddingBottom > 0 && (
+                <tr aria-hidden="true">
+                  <td colSpan={6} style={{ height: paddingBottom, padding: 0 }} />
+                </tr>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
