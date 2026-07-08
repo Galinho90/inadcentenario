@@ -208,10 +208,10 @@ export function DebtorsTable({ debtors }: Props) {
 
         {/* Linha 2: filtros avançados agrupados */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <SlidersHorizontal className="h-3 w-3" />
-              Valor mínimo (R$)
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <SlidersHorizontal className="h-3 w-3 shrink-0" />
+              <span className="truncate">Valor mínimo (R$)</span>
             </label>
             <Input
               type="text"
@@ -219,15 +219,16 @@ export function DebtorsTable({ debtors }: Props) {
               placeholder="Ex: 500,00"
               value={minValue}
               onChange={(e) => setMinValue(e.target.value)}
+              className="h-10"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Tipo de cobrança
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <span className="truncate">Tipo de cobrança</span>
             </label>
             <Select value={cobrancaFilter} onValueChange={(v) => setCobrancaFilter(v as CobrancaFilter)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
@@ -248,13 +249,13 @@ export function DebtorsTable({ debtors }: Props) {
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Scale className="h-3 w-3" />
-              Judiciais: nº processo
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <Scale className="h-3 w-3 shrink-0" />
+              <span className="truncate">Judiciais: nº processo</span>
             </label>
             <Select value={processoFilter} onValueChange={(v) => setProcessoFilter(v as ProcessoFilter)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -275,30 +276,33 @@ export function DebtorsTable({ debtors }: Props) {
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">
-              Boletos atrasados (min – máx)
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
+              <span className="truncate">Boletos atrasados (min – máx)</span>
             </label>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 h-10">
               <Input
                 type="number"
                 min={0}
                 placeholder="Min"
                 value={minBoletos}
                 onChange={(e) => setMinBoletos(e.target.value)}
+                className="h-10"
               />
-              <span className="text-muted-foreground text-sm">–</span>
+              <span className="text-muted-foreground text-sm shrink-0">–</span>
               <Input
                 type="number"
                 min={0}
                 placeholder="Máx"
                 value={maxBoletos}
                 onChange={(e) => setMaxBoletos(e.target.value)}
+                className="h-10"
               />
             </div>
           </div>
         </div>
       </div>
+
 
       <VirtualDebtorRows
         rows={filtered}
