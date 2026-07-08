@@ -10,41 +10,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trash2, FileText, Loader2 } from "lucide-react";
-import { listReports, deleteReport, type ReportSummary } from "@/lib/reportsRepo";
+import { deleteReport } from "@/lib/reportsRepo";
 import { formatBRL } from "@/lib/pdfParser";
+import { useReports, queryKeys } from "@/lib/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-interface Props {
-  refreshKey: number;
-}
-
-export function ReportsHistory({ refreshKey }: Props) {
-  const [reports, setReports] = useState<ReportSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ReportsHistory() {
+  const qc = useQueryClient();
+  const { data: reports = [], isLoading, error } = useReports();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  async function load() {
-    setLoading(true);
-    try {
-      setReports(await listReports());
-    } catch (e) {
-      console.error(e);
-      toast.error("Falha ao carregar histórico");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    load();
-  }, [refreshKey]);
+    if (error) toast.error("Falha ao carregar histórico");
+  }, [error]);
 
   async function handleDelete(id: string) {
     if (!confirm("Apagar este relatório do histórico?")) return;
     setDeletingId(id);
     try {
       await deleteReport(id);
-      setReports((prev) => prev.filter((r) => r.id !== id));
+      // Atualização otimista via cache
+      qc.setQueryData(queryKeys.reports, (prev: typeof reports | undefined) =>
+        (prev ?? []).filter((r) => r.id !== id)
+      );
       toast.success("Relatório apagado");
     } catch (e) {
       console.error(e);
@@ -54,7 +43,7 @@ export function ReportsHistory({ refreshKey }: Props) {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="p-8 flex items-center justify-center text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin mr-2" />

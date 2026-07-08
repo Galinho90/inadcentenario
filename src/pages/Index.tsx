@@ -1,30 +1,45 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PdfDropzone } from "@/components/PdfDropzone";
-import { DashboardOverview } from "@/components/DashboardOverview";
-import { DebtorsTable } from "@/components/DebtorsTable";
-
-import { ReportsHistory } from "@/components/ReportsHistory";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2, RefreshCw, Settings, Upload, UserCircle } from "lucide-react";
-import { parseDebtors, type Debtor } from "@/lib/pdfParser";
-import { extractTextFromPdf } from "@/lib/pdfLoader";
+import type { Debtor } from "@/lib/pdfParser";
 import {
   loadLatestReport,
   saveReport,
   type ReportSummary,
 } from "@/lib/reportsRepo";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queries";
 import { toast } from "sonner";
 
+// Code-split: Recharts + tabela pesada não vão no chunk inicial
+const DashboardOverview = lazy(() =>
+  import("@/components/DashboardOverview").then((m) => ({ default: m.DashboardOverview }))
+);
+const DebtorsTable = lazy(() =>
+  import("@/components/DebtorsTable").then((m) => ({ default: m.DebtorsTable }))
+);
+const ReportsHistory = lazy(() =>
+  import("@/components/ReportsHistory").then((m) => ({ default: m.ReportsHistory }))
+);
+
+const SectionFallback = () => (
+  <div className="flex items-center justify-center py-12 text-muted-foreground">
+    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+    Carregando...
+  </div>
+);
+
 const Index = () => {
+  const qc = useQueryClient();
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [current, setCurrent] = useState<ReportSummary | null>(null);
   const [loadingCurrent, setLoadingCurrent] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [historyKey, setHistoryKey] = useState(0);
   const [tab, setTab] = useState("atual");
   const [showUpload, setShowUpload] = useState(false);
 
@@ -51,10 +66,20 @@ const Index = () => {
     refreshCurrent();
   }, [refreshCurrent]);
 
+  // Prefetch dinâmico: ao passar o mouse sobre a aba histórico, aquece o chunk
+  const prefetchHistory = useCallback(() => {
+    import("@/components/ReportsHistory");
+  }, []);
+
   async function handleFile(f: File) {
     setProcessing(true);
     setError(null);
     try {
+      // Import dinâmico do pipeline PDF — só carrega pdf.js quando o usuário for realmente enviar
+      const [{ extractTextFromPdf }, { parseDebtors }] = await Promise.all([
+        import("@/lib/pdfLoader"),
+        import("@/lib/pdfParser"),
+      ]);
       const text = await extractTextFromPdf(f);
       const result = parseDebtors(text);
       if (result.length === 0) {
@@ -63,13 +88,10 @@ const Index = () => {
         );
         return;
       }
-      // Substitui a lista atual: salva como novo relatório (vira o "atual").
       await saveReport({ nomeArquivo: f.name, debtors: result });
-      toast.success(
-        `Lista atualizada — ${result.length} inadimplentes`
-      );
+      toast.success(`Lista atualizada — ${result.length} inadimplentes`);
       setShowUpload(false);
-      setHistoryKey((k) => k + 1);
+      qc.invalidateQueries({ queryKey: queryKeys.reports });
       await refreshCurrent();
     } catch (e) {
       console.error(e);
@@ -98,7 +120,7 @@ const Index = () => {
           </div>
           <div className="flex gap-2 shrink-0">
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link to="/perfil">
+              <Link to="/perfil" prefetch="intent">
                 <UserCircle className="h-4 w-4 mr-1.5" />
                 Perfil
               </Link>
@@ -123,7 +145,14 @@ const Index = () => {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="h-10">
             <TabsTrigger value="atual" className="text-sm">Lista atual</TabsTrigger>
-            <TabsTrigger value="historico" className="text-sm">Histórico</TabsTrigger>
+            <TabsTrigger
+              value="historico"
+              className="text-sm"
+              onMouseEnter={prefetchHistory}
+              onFocus={prefetchHistory}
+            >
+              Histórico
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="atual" className="space-y-6 mt-6">
@@ -152,7 +181,8 @@ const Index = () => {
                   size="sm"
                   onClick={async () => {
                     await refreshCurrent();
-                    setHistoryKey((k) => k + 1);
+                    qc.invalidateQueries({ queryKey: queryKeys.reports });
+                    qc.invalidateQueries({ queryKey: queryKeys.processos });
                     toast.success("Dados atualizados");
                   }}
                   disabled={loadingCurrent}
@@ -209,19 +239,20 @@ const Index = () => {
                 Carregando...
               </div>
             ) : debtors.length > 0 ? (
-              <>
+              <Suspense fallback={<SectionFallback />}>
                 <DashboardOverview
                   debtors={debtors}
                   fileName={current?.nome_arquivo}
                 />
-                
                 <DebtorsTable debtors={debtors} />
-              </>
+              </Suspense>
             ) : null}
           </TabsContent>
 
           <TabsContent value="historico" className="mt-6">
-            <ReportsHistory refreshKey={historyKey} />
+            <Suspense fallback={<SectionFallback />}>
+              <ReportsHistory />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </main>
