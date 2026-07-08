@@ -177,13 +177,23 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
                         </Badge>
                       </div>
                       {proc ? (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <Scale className="h-3 w-3" />
-                          Processo:{" "}
-                          <span className="font-mono text-foreground">
-                            {proc.numero_processo}
-                          </span>
-                        </p>
+                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          <p className="flex items-center gap-1">
+                            <Scale className="h-3 w-3" />
+                            Processo:{" "}
+                            <span className="font-mono text-foreground">
+                              {proc.numero_processo}
+                            </span>
+                          </p>
+                          {proc.chave_processo && (
+                            <p className="pl-4">
+                              Chave:{" "}
+                              <span className="font-mono text-foreground break-all">
+                                {proc.chave_processo}
+                              </span>
+                            </p>
+                          )}
+                        </div>
                       ) : editable ? (
                         <p className="text-xs text-muted-foreground mt-1">
                           Sem processo registrado
