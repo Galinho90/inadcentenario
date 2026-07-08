@@ -92,6 +92,7 @@ export type Database = {
       }
       processos_judiciais: {
         Row: {
+          chave_processo: string | null
           created_at: string
           id: string
           nome: string
@@ -102,6 +103,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          chave_processo?: string | null
           created_at?: string
           id?: string
           nome: string
@@ -112,6 +114,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          chave_processo?: string | null
           created_at?: string
           id?: string
           nome?: string
