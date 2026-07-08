@@ -118,7 +118,7 @@ export function DebtorsTable({ debtors }: Props) {
     }
 
     return list;
-  }, [searchIndex, searchLower, minValue, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
+  }, [searchIndex, searchLower, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
 
 
   const judicialCount = useMemo(() => {
@@ -136,14 +136,12 @@ export function DebtorsTable({ debtors }: Props) {
   }, [debtors, procMap, settings]);
 
   const activeFilterCount =
-    (minValue.trim() ? 1 : 0) +
     (cobrancaFilter !== "todos" ? 1 : 0) +
     (processoFilter !== "todos" ? 1 : 0) +
     (minBoletos.trim() || maxBoletos.trim() ? 1 : 0);
 
   function clearFilters() {
     setSearch("");
-    setMinValue("");
     setCobrancaFilter("todos");
     setProcessoFilter("todos");
     setMinBoletos("");
