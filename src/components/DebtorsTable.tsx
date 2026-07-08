@@ -25,7 +25,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash, X, SlidersHorizontal } from "lucide-react";
 import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
@@ -129,76 +129,168 @@ export function DebtorsTable({ debtors }: Props) {
     }).length;
   }, [debtors, procMap, settings]);
 
+  const activeFilterCount =
+    (minValue.trim() ? 1 : 0) +
+    (cobrancaFilter !== "todos" ? 1 : 0) +
+    (processoFilter !== "todos" ? 1 : 0) +
+    (minBoletos.trim() || maxBoletos.trim() ? 1 : 0);
+
+  function clearFilters() {
+    setSearch("");
+    setMinValue("");
+    setCobrancaFilter("todos");
+    setProcessoFilter("todos");
+    setMinBoletos("");
+    setMaxBoletos("");
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2 flex-wrap items-center">
-          <div className="relative">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        {/* Linha 1: busca + contadores + ações */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar nome ou unidade"
+              placeholder="Buscar por nome ou unidade..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 w-64"
+              className="pl-8"
+            />
+            {search && (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs text-destructive font-semibold"
+              title="Total de casos judiciais"
+            >
+              <Gavel className="h-3 w-3" />
+              {judicialCount} judicial
+            </span>
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs text-orange-500 font-semibold"
+              title="Total de casos extrajudiciais"
+            >
+              <FileWarning className="h-3 w-3" />
+              {extrajudicialCount} extra
+            </span>
+            {activeFilterCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-8 text-xs"
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Limpar ({activeFilterCount})
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Linha 2: filtros avançados agrupados */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <SlidersHorizontal className="h-3 w-3" />
+              Valor mínimo (R$)
+            </label>
+            <Input
+              type="text"
+              inputMode="decimal"
+              placeholder="Ex: 500,00"
+              value={minValue}
+              onChange={(e) => setMinValue(e.target.value)}
             />
           </div>
-          <Input
-            type="text"
-            inputMode="decimal"
-            placeholder="Valor mínimo (R$)"
-            value={minValue}
-            onChange={(e) => setMinValue(e.target.value)}
-            className="w-44"
-          />
-          <Select value={cobrancaFilter} onValueChange={(v) => setCobrancaFilter(v as CobrancaFilter)}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Tipo cobrança" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="judicial">Judicial</SelectItem>
-              <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={processoFilter} onValueChange={(v) => setProcessoFilter(v as ProcessoFilter)}>
-            <SelectTrigger className="w-52" title="Filtrar judiciais por status do número de processo">
-              <Scale className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-              <SelectValue placeholder="Judiciais: processo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Judiciais: todos</SelectItem>
-              <SelectItem value="com">Judiciais com nº processo</SelectItem>
-              <SelectItem value="sem">Judiciais sem nº processo</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input
-            type="number"
-            min={0}
-            placeholder="Min. boletos atrasados"
-            value={minBoletos}
-            onChange={(e) => setMinBoletos(e.target.value)}
-            className="w-44"
-          />
-          <Input
-            type="number"
-            min={0}
-            placeholder="Máx. boletos atrasados"
-            value={maxBoletos}
-            onChange={(e) => setMaxBoletos(e.target.value)}
-            className="w-44"
-          />
-          <div className="flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-destructive font-semibold">
-              <Gavel className="h-3 w-3" />
-              {judicialCount}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-orange-500 font-semibold">
-              <FileWarning className="h-3 w-3" />
-              {extrajudicialCount}
-            </span>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Tipo de cobrança
+            </label>
+            <Select value={cobrancaFilter} onValueChange={(v) => setCobrancaFilter(v as CobrancaFilter)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os tipos</SelectItem>
+                <SelectItem value="judicial">
+                  <span className="flex items-center gap-2">
+                    <Gavel className="h-3.5 w-3.5 text-destructive" />
+                    Judicial
+                  </span>
+                </SelectItem>
+                <SelectItem value="extrajudicial">
+                  <span className="flex items-center gap-2">
+                    <FileWarning className="h-3.5 w-3.5 text-orange-500" />
+                    Extrajudicial
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Scale className="h-3 w-3" />
+              Judiciais: nº processo
+            </label>
+            <Select value={processoFilter} onValueChange={(v) => setProcessoFilter(v as ProcessoFilter)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="com">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    Com nº processo
+                  </span>
+                </SelectItem>
+                <SelectItem value="sem">
+                  <span className="flex items-center gap-2">
+                    <CircleSlash className="h-3.5 w-3.5 text-destructive" />
+                    Sem nº processo
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Boletos atrasados (min – máx)
+            </label>
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                min={0}
+                placeholder="Min"
+                value={minBoletos}
+                onChange={(e) => setMinBoletos(e.target.value)}
+              />
+              <span className="text-muted-foreground text-sm">–</span>
+              <Input
+                type="number"
+                min={0}
+                placeholder="Máx"
+                value={maxBoletos}
+                onChange={(e) => setMaxBoletos(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </div>
+
 
       <div className="rounded-lg border bg-card">
         <Table>
