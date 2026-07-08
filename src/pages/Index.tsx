@@ -120,7 +120,7 @@ const Index = () => {
           </div>
           <div className="flex gap-2 shrink-0">
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link to="/perfil" prefetch="intent">
+              <Link to="/perfil">
                 <UserCircle className="h-4 w-4 mr-1.5" />
                 Perfil
               </Link>
