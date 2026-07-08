@@ -38,6 +38,7 @@ import { useProcessos, queryKeys } from "@/lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
+import { CopyButton } from "./CopyButton";
 
 interface Props {
   debtors: Debtor[];
@@ -407,12 +408,14 @@ export function DebtorsTable({ debtors }: Props) {
                           </div>
                           {ativo ? (
                             <div className="text-sm space-y-2">
-                              <p className="text-muted-foreground">
-                                {isExt ? "Referência" : "Processo"}:{" "}
+                              <p className="text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                                <span>{isExt ? "Referência" : "Processo"}:</span>
                                 <strong className="font-mono text-foreground">
                                   {proc!.numero_processo}
                                 </strong>
+                                <CopyButton value={proc!.numero_processo} label={isExt ? "número da referência" : "número do processo"} />
                               </p>
+
                               {proc!.chave_processo && (
                                 <p className="text-muted-foreground">
                                   Chave:{" "}
@@ -630,8 +633,9 @@ function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: Vi
                               <CheckCircle2 className="h-3 w-3" />
                               Com nº processo
                             </Badge>
-                            <span className="font-mono text-xs text-muted-foreground">
+                            <span className="font-mono text-xs text-muted-foreground inline-flex items-center gap-1">
                               {proc!.numero_processo}
+                              <CopyButton value={proc!.numero_processo} />
                             </span>
                           </>
                         )}
@@ -644,8 +648,9 @@ function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: Vi
                               <FileWarning className="h-3 w-3" />
                               Extrajudicial
                             </Badge>
-                            <span className="font-mono text-xs text-muted-foreground">
+                            <span className="font-mono text-xs text-muted-foreground inline-flex items-center gap-1">
                               {proc!.numero_processo}
+                              <CopyButton value={proc!.numero_processo} label="número da referência" />
                             </span>
                           </>
                         )}

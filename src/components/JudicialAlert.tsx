@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { CopyButton } from "./CopyButton";
 import { type Debtor, formatBRL } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
@@ -171,12 +172,13 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
                       </div>
                       {proc ? (
                         <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                          <p className="flex items-center gap-1">
+                          <p className="flex items-center gap-1 flex-wrap">
                             <Scale className="h-3 w-3" />
-                            Processo:{" "}
+                            <span>Processo:</span>
                             <span className="font-mono text-foreground">
                               {proc.numero_processo}
                             </span>
+                            <CopyButton value={proc.numero_processo} />
                           </p>
                           {proc.chave_processo && (
                             <p className="pl-4">
