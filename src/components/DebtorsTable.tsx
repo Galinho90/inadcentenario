@@ -50,7 +50,7 @@ export function DebtorsTable({ debtors }: Props) {
   const settings = useJudicialSettings();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [minValue, setMinValue] = useState("");
+  
   const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
   const [processoFilter, setProcessoFilter] = useState<ProcessoFilter>("todos");
   const [minBoletos, setMinBoletos] = useState("");
@@ -77,7 +77,6 @@ export function DebtorsTable({ debtors }: Props) {
   );
 
   const filtered = useMemo(() => {
-    const min = parseFloat(minValue.replace(",", ".")) || 0;
     const minB = parseInt(minBoletos, 10);
     const maxB = parseInt(maxBoletos, 10);
     const hasBoletoRange = !isNaN(minB) || !isNaN(maxB);
@@ -85,7 +84,6 @@ export function DebtorsTable({ debtors }: Props) {
 
     let list: Debtor[] = [];
     for (const { d, nomeLower } of searchIndex) {
-      if (d.total < min) continue;
       if (hasSearch && !nomeLower.includes(searchLower) && !d.unidade.includes(searchLower)) continue;
       list.push(d);
     }
@@ -120,7 +118,7 @@ export function DebtorsTable({ debtors }: Props) {
     }
 
     return list;
-  }, [searchIndex, searchLower, minValue, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
+  }, [searchIndex, searchLower, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
 
 
   const judicialCount = useMemo(() => {
@@ -138,14 +136,12 @@ export function DebtorsTable({ debtors }: Props) {
   }, [debtors, procMap, settings]);
 
   const activeFilterCount =
-    (minValue.trim() ? 1 : 0) +
     (cobrancaFilter !== "todos" ? 1 : 0) +
     (processoFilter !== "todos" ? 1 : 0) +
     (minBoletos.trim() || maxBoletos.trim() ? 1 : 0);
 
   function clearFilters() {
     setSearch("");
-    setMinValue("");
     setCobrancaFilter("todos");
     setProcessoFilter("todos");
     setMinBoletos("");
@@ -209,21 +205,8 @@ export function DebtorsTable({ debtors }: Props) {
 
 
         {/* Linha 2: filtros avançados agrupados */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
-              <SlidersHorizontal className="h-3 w-3 shrink-0" />
-              <span className="truncate">Valor mínimo (R$)</span>
-            </label>
-            <Input
-              type="text"
-              inputMode="decimal"
-              placeholder="Ex: 500,00"
-              value={minValue}
-              onChange={(e) => setMinValue(e.target.value)}
-              className="h-10"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 h-4 leading-4">
