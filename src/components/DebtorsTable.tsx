@@ -454,6 +454,14 @@ export function DebtorsTable({ debtors }: Props) {
                                   {proc!.numero_processo}
                                 </strong>
                               </p>
+                              {proc!.chave_processo && (
+                                <p className="text-muted-foreground">
+                                  Chave:{" "}
+                                  <strong className="font-mono text-foreground break-all">
+                                    {proc!.chave_processo}
+                                  </strong>
+                                </p>
+                              )}
                               {proc!.observacoes && (
                                 <p className="text-xs text-muted-foreground">
                                   {proc!.observacoes}

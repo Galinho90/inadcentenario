@@ -39,6 +39,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Debtor | null>(null);
   const [numero, setNumero] = useState("");
+  const [chave, setChave] = useState("");
   const [obs, setObs] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -69,6 +70,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
     const existing = map.get(`${d.unidade}|${d.nome}`);
     setEditing(d);
     setNumero(existing?.numero_processo ?? "");
+    setChave(existing?.chave_processo ?? "");
     setObs(existing?.observacoes ?? "");
   }
 
@@ -89,6 +91,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
         unidade: editing.unidade,
         nome: editing.nome,
         numero_processo: trimmed,
+        chave_processo: chave.trim().slice(0, 100) || null,
         observacoes: obs.trim().slice(0, 500) || null,
       });
       toast.success("Processo registrado");
@@ -177,13 +180,23 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
                         </Badge>
                       </div>
                       {proc ? (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <Scale className="h-3 w-3" />
-                          Processo:{" "}
-                          <span className="font-mono text-foreground">
-                            {proc.numero_processo}
-                          </span>
-                        </p>
+                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          <p className="flex items-center gap-1">
+                            <Scale className="h-3 w-3" />
+                            Processo:{" "}
+                            <span className="font-mono text-foreground">
+                              {proc.numero_processo}
+                            </span>
+                          </p>
+                          {proc.chave_processo && (
+                            <p className="pl-4">
+                              Chave:{" "}
+                              <span className="font-mono text-foreground break-all">
+                                {proc.chave_processo}
+                              </span>
+                            </p>
+                          )}
+                        </div>
                       ) : editable ? (
                         <p className="text-xs text-muted-foreground mt-1">
                           Sem processo registrado
@@ -245,6 +258,16 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
                     placeholder="ex: 0001234-56.2026.8.26.0100"
                     maxLength={100}
                     autoFocus
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="chave">Chave do processo (opcional)</Label>
+                  <Input
+                    id="chave"
+                    value={chave}
+                    onChange={(e) => setChave(e.target.value)}
+                    placeholder="ex: chave de acesso do e-SAJ / PJe"
+                    maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">

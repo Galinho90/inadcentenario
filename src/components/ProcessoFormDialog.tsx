@@ -44,6 +44,7 @@ export function ProcessoFormDialog({
   onSaved,
 }: Props) {
   const [numero, setNumero] = useState("");
+  const [chave, setChave] = useState("");
   const [obs, setObs] = useState("");
   const [tipo, setTipo] = useState<ProcessoTipo>("judicial");
   const [saving, setSaving] = useState(false);
@@ -51,6 +52,7 @@ export function ProcessoFormDialog({
   useEffect(() => {
     if (open) {
       setNumero(existing?.numero_processo ?? "");
+      setChave(existing?.chave_processo ?? "");
       setObs(existing?.observacoes ?? "");
       setTipo(existing?.tipo ?? "judicial");
     }
@@ -67,12 +69,18 @@ export function ProcessoFormDialog({
       toast.error("Número muito longo");
       return;
     }
+    const chaveTrimmed = chave.trim();
+    if (chaveTrimmed.length > 100) {
+      toast.error("Chave muito longa");
+      return;
+    }
     setSaving(true);
     try {
       await upsertProcesso({
         unidade: debtor.unidade,
         nome: debtor.nome,
         numero_processo: trimmed,
+        chave_processo: chaveTrimmed || null,
         observacoes: obs.trim().slice(0, 500) || null,
         tipo,
       });
@@ -149,6 +157,18 @@ export function ProcessoFormDialog({
                   autoFocus
                 />
               </div>
+              {tipo === "judicial" && (
+                <div className="space-y-2">
+                  <Label htmlFor="proc-chave">Chave do processo (opcional)</Label>
+                  <Input
+                    id="proc-chave"
+                    value={chave}
+                    onChange={(e) => setChave(e.target.value)}
+                    placeholder="ex: chave de acesso do e-SAJ / PJe"
+                    maxLength={100}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="proc-obs">Observações (opcional)</Label>
                 <Textarea

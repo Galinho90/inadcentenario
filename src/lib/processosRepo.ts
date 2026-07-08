@@ -15,6 +15,7 @@ export interface ProcessoJudicial {
   unidade: string;
   nome: string;
   numero_processo: string;
+  chave_processo: string | null;
   observacoes: string | null;
   tipo: ProcessoTipo;
   updated_at: string;
@@ -62,6 +63,7 @@ export async function upsertProcesso(input: {
   unidade: string;
   nome: string;
   numero_processo: string;
+  chave_processo?: string | null;
   observacoes?: string | null;
   tipo?: ProcessoTipo;
 }): Promise<void> {
@@ -72,6 +74,7 @@ export async function upsertProcesso(input: {
         unidade: input.unidade,
         nome: input.nome,
         numero_processo: input.numero_processo,
+        chave_processo: input.chave_processo ?? null,
         observacoes: input.observacoes ?? null,
         tipo: input.tipo ?? "judicial",
       } as any,
