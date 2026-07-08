@@ -81,39 +81,49 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="container py-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Inadimplência — Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Lista atual de inadimplentes do condomínio. Suba um novo PDF para
-              substituir a lista.
-            </p>
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+        <div className="container py-4 md:py-5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 grid place-items-center shadow-elevated shrink-0">
+              <span className="text-primary-foreground font-display font-bold text-sm">IC</span>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-xl font-display font-semibold tracking-tight truncate">
+                Inadimplência — Dashboard
+              </h1>
+              <p className="text-xs md:text-sm text-muted-foreground truncate">
+                Gestão de inadimplentes do condomínio
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild>
+          <div className="flex gap-2 shrink-0">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
               <Link to="/perfil">
                 <UserCircle className="h-4 w-4 mr-1.5" />
                 Perfil
               </Link>
             </Button>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="sm:hidden" aria-label="Perfil">
+              <Link to="/perfil"><UserCircle className="h-4 w-4" /></Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
               <Link to="/configuracoes">
                 <Settings className="h-4 w-4 mr-1.5" />
                 Configurações
               </Link>
             </Button>
+            <Button variant="outline" size="sm" asChild className="sm:hidden" aria-label="Configurações">
+              <Link to="/configuracoes"><Settings className="h-4 w-4" /></Link>
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="container py-8 space-y-6">
+      <main className="container py-6 md:py-8 space-y-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="atual">Lista atual</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
+          <TabsList className="h-10">
+            <TabsTrigger value="atual" className="text-sm">Lista atual</TabsTrigger>
+            <TabsTrigger value="historico" className="text-sm">Histórico</TabsTrigger>
           </TabsList>
 
           <TabsContent value="atual" className="space-y-6 mt-6">

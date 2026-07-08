@@ -90,35 +90,33 @@ export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div
-        className="relative rounded-xl border p-6 md:p-8 overflow-hidden"
-        style={{ background: "var(--gradient-hero)" }}
-      >
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+      <div className="relative rounded-2xl border border-border/60 bg-gradient-hero p-6 md:p-8 overflow-hidden shadow-card">
+        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div className="space-y-2">
             {fileName && (
-              <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-background/60 backdrop-blur rounded-full px-2.5 py-1 border border-border/60">
                 <FileText className="h-3.5 w-3.5" />
                 <span className="font-mono truncate max-w-xs">{fileName}</span>
               </div>
             )}
-            <h2 className="text-sm font-medium text-muted-foreground">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Total inadimplente
             </h2>
-            <p className="text-4xl md:text-5xl font-bold tracking-tight">
+            <p className="text-4xl md:text-5xl font-display font-bold tracking-tight tabular-nums">
               {formatBRL(stats.total)}
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
-              <Badge variant="secondary" className="gap-1.5">
+              <Badge variant="secondary" className="gap-1.5 rounded-full">
                 <Users className="h-3 w-3" />
                 {stats.count} unidades
               </Badge>
-              <Badge variant="secondary" className="gap-1.5">
+              <Badge variant="secondary" className="gap-1.5 rounded-full">
                 <Clock className="h-3 w-3" />
                 {stats.totalBoletos} boletos
               </Badge>
               {stats.criticos > 0 && (
-                <Badge variant="destructive" className="gap-1.5">
+                <Badge variant="destructive" className="gap-1.5 rounded-full">
                   <AlertTriangle className="h-3 w-3" />
                   {stats.criticos} crítico{stats.criticos > 1 ? "s" : ""} (+90d)
                 </Badge>
@@ -279,12 +277,12 @@ function MiniStat({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border bg-card/80 backdrop-blur px-4 py-3 min-w-[140px]">
+    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-4 py-3 min-w-[140px] transition-all hover:shadow-card hover:-translate-y-0.5">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
         <Icon className="h-3.5 w-3.5" />
         {label}
       </div>
-      <p className="text-lg font-semibold tabular-nums">{value}</p>
+      <p className="text-lg font-display font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

@@ -26,20 +26,21 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-            <LogIn className="h-6 w-6" />
-            INAD Cetenário
-          </CardTitle>
-          <CardDescription>
-            Faça login para acessar o sistema
-          </CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4 relative overflow-hidden">
+      <div className="absolute inset-0 -z-10 opacity-60 [background:radial-gradient(60%_50%_at_50%_0%,hsl(var(--primary)/0.12),transparent_70%)]" />
+      <Card className="w-full max-w-sm shadow-elevated border-border/60">
+        <CardHeader className="text-center space-y-3 pb-4">
+          <div className="mx-auto h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 grid place-items-center shadow-elevated">
+            <LogIn className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <div className="space-y-1">
+            <CardTitle className="text-2xl font-display">INAD Centenário</CardTitle>
+            <CardDescription>Faça login para acessar o sistema</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
@@ -48,9 +49,10 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
@@ -60,9 +62,10 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                autoComplete="current-password"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-10" disabled={loading}>
               {loading ? "Aguarde..." : "Entrar"}
             </Button>
           </form>
