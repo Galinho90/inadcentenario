@@ -39,6 +39,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Debtor | null>(null);
   const [numero, setNumero] = useState("");
+  const [chave, setChave] = useState("");
   const [obs, setObs] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -69,6 +70,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
     const existing = map.get(`${d.unidade}|${d.nome}`);
     setEditing(d);
     setNumero(existing?.numero_processo ?? "");
+    setChave(existing?.chave_processo ?? "");
     setObs(existing?.observacoes ?? "");
   }
 
@@ -89,6 +91,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
         unidade: editing.unidade,
         nome: editing.nome,
         numero_processo: trimmed,
+        chave_processo: chave.trim().slice(0, 100) || null,
         observacoes: obs.trim().slice(0, 500) || null,
       });
       toast.success("Processo registrado");
