@@ -50,7 +50,7 @@ export function DebtorsTable({ debtors }: Props) {
   const settings = useJudicialSettings();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [minValue, setMinValue] = useState("");
+  
   const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
   const [processoFilter, setProcessoFilter] = useState<ProcessoFilter>("todos");
   const [minBoletos, setMinBoletos] = useState("");
