@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -32,9 +32,9 @@ import {
   indexByKey,
   isExtrajudicial,
   isJudicial,
-  listProcessos,
-  type ProcessoJudicial,
 } from "@/lib/processosRepo";
+import { useProcessos, queryKeys } from "@/lib/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
 
@@ -47,6 +47,7 @@ type ProcessoFilter = "todos" | "com" | "sem";
 
 export function DebtorsTable({ debtors }: Props) {
   const settings = useJudicialSettings();
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
@@ -54,56 +55,61 @@ export function DebtorsTable({ debtors }: Props) {
   const [minBoletos, setMinBoletos] = useState("");
   const [maxBoletos, setMaxBoletos] = useState("");
   const [selected, setSelected] = useState<Debtor | null>(null);
-  const [processos, setProcessos] = useState<ProcessoJudicial[]>([]);
   const [editingProc, setEditingProc] = useState<Debtor | null>(null);
+
+  // Cache compartilhado — deduplica request entre DebtorsTable e JudicialAlert
+  const { data: processos = [] } = useProcessos();
   const procMap = useMemo(() => indexByKey(processos), [processos]);
 
-  const refreshProcessos = useCallback(async () => {
-    try {
-      setProcessos(await listProcessos());
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  const refreshProcessos = useCallback(() => {
+    qc.invalidateQueries({ queryKey: queryKeys.processos });
+  }, [qc]);
 
-  useEffect(() => {
-    refreshProcessos();
-  }, [refreshProcessos]);
+  // Deferred: mantém UI responsiva enquanto o filtro pesado recomputa
+  const deferredSearch = useDeferredValue(search);
+  const searchLower = useMemo(() => deferredSearch.toLowerCase(), [deferredSearch]);
+
+  // Índice pré-computado: evita `.toLowerCase()` por linha em cada keystroke
+  const searchIndex = useMemo(
+    () => debtors.map((d) => ({ d, nomeLower: d.nome.toLowerCase() })),
+    [debtors]
+  );
+
   const filtered = useMemo(() => {
     const min = parseFloat(minValue.replace(",", ".")) || 0;
     const minB = parseInt(minBoletos, 10);
     const maxB = parseInt(maxBoletos, 10);
-    let list = debtors.filter(
-      (d) =>
-        d.total >= min &&
-        (d.nome.toLowerCase().includes(search.toLowerCase()) ||
-          d.unidade.includes(search))
-    );
+    const hasBoletoRange = !isNaN(minB) || !isNaN(maxB);
+    const hasSearch = searchLower.length > 0;
+
+    let list: Debtor[] = [];
+    for (const { d, nomeLower } of searchIndex) {
+      if (d.total < min) continue;
+      if (hasSearch && !nomeLower.includes(searchLower) && !d.unidade.includes(searchLower)) continue;
+      list.push(d);
+    }
 
     if (cobrancaFilter !== "todos") {
       list = list.filter((d) => {
         const proc = procMap.get(`${d.unidade}|${d.nome}`);
-        const judicial = isJudicial(d, settings);
-        const extrajudicial = isExtrajudicial(d, settings);
         if (cobrancaFilter === "judicial") {
-          return (proc && proc.tipo === "judicial") || (judicial && !proc);
+          return (proc && proc.tipo === "judicial") || (isJudicial(d, settings) && !proc);
         }
-        return (proc && proc.tipo === "extrajudicial") || (extrajudicial && !proc);
+        return (proc && proc.tipo === "extrajudicial") || (isExtrajudicial(d, settings) && !proc);
       });
     }
 
     if (processoFilter !== "todos") {
       list = list.filter((d) => {
         const proc = procMap.get(`${d.unidade}|${d.nome}`);
-        const isJudEligivel =
-          (proc && proc.tipo === "judicial") || isJudicial(d, settings);
+        const isJudEligivel = (proc && proc.tipo === "judicial") || isJudicial(d, settings);
         if (!isJudEligivel) return false;
         const temNumero = !!proc?.numero_processo?.trim();
         return processoFilter === "com" ? temNumero : !temNumero;
       });
     }
 
-    if (!isNaN(minB) || !isNaN(maxB)) {
+    if (hasBoletoRange) {
       list = list.filter((d) => {
         const count = d.boletos.length;
         if (!isNaN(minB) && count < minB) return false;
@@ -113,7 +119,8 @@ export function DebtorsTable({ debtors }: Props) {
     }
 
     return list;
-  }, [debtors, search, minValue, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
+  }, [searchIndex, searchLower, minValue, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
+
 
   const judicialCount = useMemo(() => {
     return debtors.filter((d) => {
