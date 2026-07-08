@@ -77,7 +77,6 @@ export function DebtorsTable({ debtors }: Props) {
   );
 
   const filtered = useMemo(() => {
-    const min = parseFloat(minValue.replace(",", ".")) || 0;
     const minB = parseInt(minBoletos, 10);
     const maxB = parseInt(maxBoletos, 10);
     const hasBoletoRange = !isNaN(minB) || !isNaN(maxB);
@@ -85,7 +84,6 @@ export function DebtorsTable({ debtors }: Props) {
 
     let list: Debtor[] = [];
     for (const { d, nomeLower } of searchIndex) {
-      if (d.total < min) continue;
       if (hasSearch && !nomeLower.includes(searchLower) && !d.unidade.includes(searchLower)) continue;
       list.push(d);
     }
