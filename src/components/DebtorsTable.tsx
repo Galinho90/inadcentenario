@@ -205,53 +205,7 @@ export function DebtorsTable({ debtors }: Props) {
           </div>
         </div>
 
-          <div className="relative w-full sm:flex-1 min-w-0">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou unidade..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-8"
-            />
-            {search && (
-              <button
-                type="button"
-                aria-label="Limpar busca"
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-wrap sm:shrink-0">
-            <span
-              className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs text-destructive font-semibold whitespace-nowrap"
-              title="Total de casos judiciais"
-            >
-              <Gavel className="h-3 w-3" />
-              {judicialCount} judicial
-            </span>
-            <span
-              className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs text-orange-500 font-semibold whitespace-nowrap"
-              title="Total de casos extrajudiciais"
-            >
-              <FileWarning className="h-3 w-3" />
-              {extrajudicialCount} extra
-            </span>
-            {activeFilterCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="h-8 text-xs ml-auto sm:ml-0"
-              >
-                <X className="h-3.5 w-3.5 mr-1" />
-                Limpar ({activeFilterCount})
-              </Button>
-            )}
-          </div>
-        </div>
+
 
 
         {/* Linha 2: filtros avançados agrupados */}
