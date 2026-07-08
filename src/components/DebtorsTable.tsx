@@ -494,7 +494,7 @@ export function DebtorsTable({ debtors }: Props) {
                             </TableCell>
                           <TableCell className="text-center">
                               <Badge
-                                variant={getBoletoAtraso(b) > 90 ? "destructive" : "secondary"}
+                                variant={getBoletoAtraso(b) >= 30 ? "destructive" : "secondary"}
                                 className="font-mono"
                               >
                                 {getBoletoAtraso(b)}d
