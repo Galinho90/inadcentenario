@@ -156,7 +156,55 @@ export function DebtorsTable({ debtors }: Props) {
     <div className="space-y-4">
       <div className="rounded-lg border bg-card p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Linha 1: busca + contadores + ações */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-stretch gap-3">
+          <div className="relative w-full sm:flex-1 min-w-0 h-10">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Buscar por nome ou unidade..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 pr-8 h-10"
+            />
+            {search && (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap sm:shrink-0 sm:h-10">
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 h-7 text-xs text-destructive font-semibold whitespace-nowrap"
+              title="Total de casos judiciais"
+            >
+              <Gavel className="h-3 w-3" />
+              {judicialCount} judicial
+            </span>
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 h-7 text-xs text-orange-500 font-semibold whitespace-nowrap"
+              title="Total de casos extrajudiciais"
+            >
+              <FileWarning className="h-3 w-3" />
+              {extrajudicialCount} extra
+            </span>
+            {activeFilterCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-8 text-xs ml-auto sm:ml-0"
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Limpar ({activeFilterCount})
+              </Button>
+            )}
+          </div>
+        </div>
+
           <div className="relative w-full sm:flex-1 min-w-0">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
