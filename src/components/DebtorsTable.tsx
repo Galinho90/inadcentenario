@@ -174,16 +174,14 @@ export function DebtorsTable({ debtors }: Props) {
               title="Total de casos judiciais"
             >
               <Gavel className="h-3 w-3" />
-              {judicialCount} <span className="hidden xs:inline">judicial</span>
-              <span className="xs:hidden sr-only">judicial</span>
+              {judicialCount} judicial
             </span>
             <span
               className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs text-orange-500 font-semibold whitespace-nowrap"
               title="Total de casos extrajudiciais"
             >
               <FileWarning className="h-3 w-3" />
-              {extrajudicialCount} <span className="hidden xs:inline">extra</span>
-              <span className="xs:hidden sr-only">extrajudicial</span>
+              {extrajudicialCount} extra
             </span>
             {activeFilterCount > 0 && (
               <Button
