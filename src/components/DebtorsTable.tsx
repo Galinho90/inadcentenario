@@ -43,12 +43,14 @@ interface Props {
 }
 
 type CobrancaFilter = "todos" | "judicial" | "extrajudicial";
+type ProcessoFilter = "todos" | "com" | "sem";
 
 export function DebtorsTable({ debtors }: Props) {
   const settings = useJudicialSettings();
   const [search, setSearch] = useState("");
   const [minValue, setMinValue] = useState("");
   const [cobrancaFilter, setCobrancaFilter] = useState<CobrancaFilter>("todos");
+  const [processoFilter, setProcessoFilter] = useState<ProcessoFilter>("todos");
   const [minBoletos, setMinBoletos] = useState("");
   const [maxBoletos, setMaxBoletos] = useState("");
   const [selected, setSelected] = useState<Debtor | null>(null);
@@ -90,6 +92,17 @@ export function DebtorsTable({ debtors }: Props) {
       });
     }
 
+    if (processoFilter !== "todos") {
+      list = list.filter((d) => {
+        const proc = procMap.get(`${d.unidade}|${d.nome}`);
+        const isJudEligivel =
+          (proc && proc.tipo === "judicial") || isJudicial(d, settings);
+        if (!isJudEligivel) return false;
+        const temNumero = !!proc?.numero_processo?.trim();
+        return processoFilter === "com" ? temNumero : !temNumero;
+      });
+    }
+
     if (!isNaN(minB) || !isNaN(maxB)) {
       list = list.filter((d) => {
         const count = d.boletos.length;
@@ -100,7 +113,7 @@ export function DebtorsTable({ debtors }: Props) {
     }
 
     return list;
-  }, [debtors, search, minValue, cobrancaFilter, procMap, settings, minBoletos, maxBoletos]);
+  }, [debtors, search, minValue, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
 
   const judicialCount = useMemo(() => {
     return debtors.filter((d) => {
@@ -145,6 +158,17 @@ export function DebtorsTable({ debtors }: Props) {
               <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="judicial">Judicial</SelectItem>
               <SelectItem value="extrajudicial">Extrajudicial</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={processoFilter} onValueChange={(v) => setProcessoFilter(v as ProcessoFilter)}>
+            <SelectTrigger className="w-52" title="Filtrar judiciais por status do número de processo">
+              <Scale className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+              <SelectValue placeholder="Judiciais: processo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Judiciais: todos</SelectItem>
+              <SelectItem value="com">Judiciais com nº processo</SelectItem>
+              <SelectItem value="sem">Judiciais sem nº processo</SelectItem>
             </SelectContent>
           </Select>
           <Input
