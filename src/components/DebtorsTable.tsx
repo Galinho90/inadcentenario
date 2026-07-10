@@ -440,13 +440,28 @@ export function DebtorsTable({ debtors }: Props) {
                                 <CopyButton value={proc!.numero_processo} label={isExt ? "número da referência" : "número do processo"} />
                               </p>
 
-                              {proc!.chave_processo && (
-                                <p className="text-muted-foreground">
-                                  Chave:{" "}
-                                  <strong className="font-mono text-foreground break-all">
-                                    {proc!.chave_processo}
-                                  </strong>
-                                </p>
+                              {!isExt && (
+                                proc!.chave_processo ? (
+                                  <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2">
+                                    <KeyRound className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                                        Chave do processo cadastrada
+                                      </p>
+                                      <p className="font-mono text-sm text-foreground break-all mt-0.5">
+                                        {proc!.chave_processo}
+                                      </p>
+                                    </div>
+                                    <CopyButton value={proc!.chave_processo} label="chave do processo" />
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                                    <KeyRound className="h-4 w-4 text-amber-600 dark:text-amber-400 opacity-70 shrink-0" />
+                                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                                      Chave do processo <strong>não cadastrada</strong> — edite para adicionar.
+                                    </p>
+                                  </div>
+                                )
                               )}
                               {proc!.observacoes && (
                                 <p className="text-xs text-muted-foreground">
