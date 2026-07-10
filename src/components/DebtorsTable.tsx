@@ -26,7 +26,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash, X, SlidersHorizontal } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash, X, SlidersHorizontal, Download } from "lucide-react";
+import { exportDebtorsToExcel } from "@/lib/exportExcel";
+import { toast } from "sonner";
 import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
@@ -188,12 +190,34 @@ export function DebtorsTable({ debtors }: Props) {
               <FileWarning className="h-3 w-3" />
               {extrajudicialCount} extra
             </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (filtered.length === 0) {
+                  toast.error("Nenhum registro para exportar");
+                  return;
+                }
+                try {
+                  exportDebtorsToExcel({ debtors: filtered, procMap, settings });
+                  toast.success(`Planilha gerada (${filtered.length} registros)`);
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Falha ao gerar planilha");
+                }
+              }}
+              className="h-8 text-xs ml-auto sm:ml-0"
+              title="Baixar planilha Excel com os filtros aplicados"
+            >
+              <Download className="h-3.5 w-3.5 mr-1" />
+              Excel
+            </Button>
             {activeFilterCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="h-8 text-xs ml-auto sm:ml-0"
+                className="h-8 text-xs"
               >
                 <X className="h-3.5 w-3.5 mr-1" />
                 Limpar ({activeFilterCount})
