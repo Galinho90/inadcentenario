@@ -37,14 +37,14 @@ export function exportDebtorsToExcel({
   fileName,
 }: ExportParams) {
   // Aba 1: Resumo por inadimplente
+  const atrasoKey = `Boletos +${settings.minAtrasoDias}d`;
   const resumoRows = debtors.map((d) => {
     const proc = procMap.get(`${d.unidade}|${d.nome}`);
     return {
       Unidade: d.unidade,
       Nome: d.nome,
       "Qtd. Boletos": d.boletos.length,
-      "Boletos +" + settings.minAtrasoDias + "d":
-        countOverdueBoletos(d, settings.minAtrasoDias),
+      [atrasoKey]: countOverdueBoletos(d, settings.minAtrasoDias),
       "Total (R$)": Number(d.total.toFixed(2)),
       "Tipo cobrança": tipoCobranca(d, procMap, settings),
       "Nº Processo/Referência": proc?.numero_processo ?? "",
