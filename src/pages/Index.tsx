@@ -286,6 +286,15 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <PdfPreviewDialog
+        open={!!pending}
+        preview={pending?.preview ?? null}
+        fileName={pending?.file.name ?? ""}
+        confirming={confirming}
+        onConfirm={confirmImport}
+        onCancel={() => setPending(null)}
+      />
     </div>
   );
 };
