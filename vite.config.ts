@@ -25,31 +25,5 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     reportCompressedSize: false,
     chunkSizeWarningLimit: 900,
-    rollupOptions: {
-      output: {
-        // Vendor splitting: reduz o chunk inicial e permite cache granular por dependência
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          if (id.includes("pdfjs-dist")) return "pdfjs";
-          if (id.includes("recharts") || id.includes("d3-")) return "charts";
-          if (id.includes("@supabase")) return "supabase";
-          if (id.includes("@radix-ui")) return "radix";
-          if (id.includes("react-router")) return "router";
-          if (id.includes("@tanstack")) return "query";
-          if (id.includes("lucide-react")) return "icons";
-          // Mantém react + react-dom + jsx-runtime + scheduler no MESMO chunk.
-          // Separá-los quebra a inicialização (React fica undefined para o react-dom).
-          if (
-            id.includes("react-dom") ||
-            id.includes("scheduler") ||
-            /[\\/]react[\\/]/.test(id) ||
-            id.includes("react/jsx-runtime") ||
-            id.includes("react/jsx-dev-runtime")
-          ) {
-            return "react-vendor";
-          }
-        },
-      },
-    },
   },
 }));
