@@ -64,6 +64,68 @@ const TOTAL_RE = /\btotal\b/i;
 const BOLETO_RE =
   /^(\d{2}\/\d{2}\/\d{2,4})\s+(\d+)\s+(\S+)\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})$/;
 
+export interface PdfPreview {
+  titulo: string | null;
+  colunas: string | null;
+  totalLinhas: number;
+  unidades: { unidade: string; nome: string }[];
+  boletos: Boleto[];
+  amostraTexto: string;
+}
+
+/** Extrai uma prévia do conteúdo detectado para validação visual antes do parse final. */
+export function buildPreview(text: string, limit = 5): PdfPreview {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+  const titulo = lines.find((l) => /inadimpl/i.test(l)) ?? null;
+  const colunas =
+    lines.find(
+      (l) =>
+        /vencimento/i.test(l) &&
+        /atraso/i.test(l) &&
+        /principal/i.test(l) &&
+        /total/i.test(l)
+    ) ?? null;
+
+  const unidades: { unidade: string; nome: string }[] = [];
+  const boletos: Boleto[] = [];
+
+  for (const l of lines) {
+    if (unidades.length < limit) {
+      const m = l.match(HEADER_RE);
+      if (m) {
+        const nome = m[2].trim();
+        const words = nome.split(/\s+/).filter((w) => /[A-Za-zÀ-ÿ]{2,}/.test(w));
+        if (words.length >= 2) unidades.push({ unidade: m[1], nome });
+      }
+    }
+    if (boletos.length < limit) {
+      if (/notifica[cç][aã]o/i.test(l)) continue;
+      const bm = l.match(BOLETO_RE);
+      if (bm) {
+        boletos.push({
+          vencimento: bm[1],
+          atraso: parseInt(bm[2], 10),
+          codigo: bm[3],
+          principal: parseBRL(bm[4]),
+          total: parseBRL(bm[5]),
+        });
+      }
+    }
+    if (unidades.length >= limit && boletos.length >= limit) break;
+  }
+
+  return {
+    titulo,
+    colunas,
+    totalLinhas: lines.length,
+    unidades,
+    boletos,
+    amostraTexto: lines.slice(0, 40).join("\n"),
+  };
+}
+
+
 export class PdfValidationError extends Error {
   constructor(message: string, public details?: string[]) {
     super(message);

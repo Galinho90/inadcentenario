@@ -1,11 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PdfDropzone } from "@/components/PdfDropzone";
+import { PdfPreviewDialog } from "@/components/PdfPreviewDialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2, RefreshCw, Settings, Upload, UserCircle } from "lucide-react";
-import type { Debtor } from "@/lib/pdfParser";
+import type { Debtor, PdfPreview } from "@/lib/pdfParser";
 import {
   loadLatestReport,
   saveReport,
@@ -42,6 +43,8 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("atual");
   const [showUpload, setShowUpload] = useState(false);
+  const [pending, setPending] = useState<{ file: File; text: string; preview: PdfPreview } | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const refreshCurrent = useCallback(async () => {
     setLoadingCurrent(true);
@@ -75,15 +78,13 @@ const Index = () => {
     setProcessing(true);
     setError(null);
     try {
-      // Import dinâmico do pipeline PDF — só carrega pdf.js quando o usuário for realmente enviar
       const [{ extractTextFromPdf }, parserMod] = await Promise.all([
         import("@/lib/pdfLoader"),
         import("@/lib/pdfParser"),
       ]);
-      const { parseDebtors, validateReportText, PdfValidationError } = parserMod;
+      const { validateReportText, buildPreview, PdfValidationError } = parserMod;
       const text = await extractTextFromPdf(f);
 
-      // Valida estrutura do PDF antes de processar
       try {
         validateReportText(text);
       } catch (ve) {
@@ -95,23 +96,38 @@ const Index = () => {
         throw ve;
       }
 
-      const result = parseDebtors(text);
-      if (result.length === 0) {
-        setError(
-          "Nenhuma unidade encontrada no padrão esperado (ex: '12 01' + nome + linha 'Total')."
-        );
-        return;
-      }
-      await saveReport({ nomeArquivo: f.name, debtors: result });
-      toast.success(`Lista atualizada — ${result.length} inadimplentes`);
-      setShowUpload(false);
-      qc.invalidateQueries({ queryKey: queryKeys.reports });
-      await refreshCurrent();
+      // Mostra prévia para validação visual antes de importar
+      setPending({ file: f, text, preview: buildPreview(text) });
     } catch (e) {
       console.error(e);
       setError("Falha ao processar o PDF. Verifique se o arquivo não está corrompido.");
     } finally {
       setProcessing(false);
+    }
+  }
+
+  async function confirmImport() {
+    if (!pending) return;
+    setConfirming(true);
+    try {
+      const { parseDebtors } = await import("@/lib/pdfParser");
+      const result = parseDebtors(pending.text);
+      if (result.length === 0) {
+        setError("Nenhuma unidade encontrada no padrão esperado (ex: '12 01' + nome + linha 'Total').");
+        setPending(null);
+        return;
+      }
+      await saveReport({ nomeArquivo: pending.file.name, debtors: result });
+      toast.success(`Lista atualizada — ${result.length} inadimplentes`);
+      setShowUpload(false);
+      setPending(null);
+      qc.invalidateQueries({ queryKey: queryKeys.reports });
+      await refreshCurrent();
+    } catch (e) {
+      console.error(e);
+      setError("Falha ao salvar o relatório.");
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -270,6 +286,15 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <PdfPreviewDialog
+        open={!!pending}
+        preview={pending?.preview ?? null}
+        fileName={pending?.file.name ?? ""}
+        confirming={confirming}
+        onConfirm={confirmImport}
+        onCancel={() => setPending(null)}
+      />
     </div>
   );
 };
