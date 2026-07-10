@@ -93,6 +93,8 @@ export function parseDebtors(text: string): Debtor[] {
     const boletos: Boleto[] = [];
 
     for (const l of block) {
+      // Ignora linhas de notificação (ex: "3° Notificação", "2ª notificacao")
+      if (/notifica[cç][aã]o/i.test(l)) continue;
       // Linha de boleto
       const bm = l.match(BOLETO_RE);
       if (bm) {
