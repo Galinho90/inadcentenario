@@ -43,6 +43,8 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("atual");
   const [showUpload, setShowUpload] = useState(false);
+  const [pending, setPending] = useState<{ file: File; text: string; preview: PdfPreview } | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const refreshCurrent = useCallback(async () => {
     setLoadingCurrent(true);
