@@ -1,11 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PdfDropzone } from "@/components/PdfDropzone";
+import { PdfPreviewDialog } from "@/components/PdfPreviewDialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2, RefreshCw, Settings, Upload, UserCircle } from "lucide-react";
-import type { Debtor } from "@/lib/pdfParser";
+import type { Debtor, PdfPreview } from "@/lib/pdfParser";
 import {
   loadLatestReport,
   saveReport,
