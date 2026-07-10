@@ -76,11 +76,25 @@ const Index = () => {
     setError(null);
     try {
       // Import dinâmico do pipeline PDF — só carrega pdf.js quando o usuário for realmente enviar
-      const [{ extractTextFromPdf }, { parseDebtors }] = await Promise.all([
+      const [{ extractTextFromPdf }, parserMod] = await Promise.all([
         import("@/lib/pdfLoader"),
         import("@/lib/pdfParser"),
       ]);
+      const { parseDebtors, validateReportText, PdfValidationError } = parserMod;
       const text = await extractTextFromPdf(f);
+
+      // Valida estrutura do PDF antes de processar
+      try {
+        validateReportText(text);
+      } catch (ve) {
+        if (ve instanceof PdfValidationError) {
+          const details = ve.details?.length ? `\n\n• ${ve.details.join("\n• ")}` : "";
+          setError(`${ve.message}${details}`);
+          return;
+        }
+        throw ve;
+      }
+
       const result = parseDebtors(text);
       if (result.length === 0) {
         setError(

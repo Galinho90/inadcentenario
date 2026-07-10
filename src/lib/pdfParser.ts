@@ -64,6 +64,69 @@ const TOTAL_RE = /\btotal\b/i;
 const BOLETO_RE =
   /^(\d{2}\/\d{2}\/\d{2,4})\s+(\d+)\s+(\S+)\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})$/;
 
+export class PdfValidationError extends Error {
+  constructor(message: string, public details?: string[]) {
+    super(message);
+    this.name = "PdfValidationError";
+  }
+}
+
+/**
+ * Valida se o texto extraído corresponde a um relatório de inadimplência
+ * no formato esperado (Controller Condomínios). Lança PdfValidationError
+ * com uma lista de problemas caso não seja compatível.
+ */
+export function validateReportText(text: string): void {
+  const problems: string[] = [];
+  const normalized = text.toLowerCase();
+
+  if (!text || text.trim().length < 50) {
+    throw new PdfValidationError(
+      "PDF vazio ou sem texto extraível. Ele pode ser uma imagem escaneada.",
+      ["Nenhum texto legível encontrado no arquivo."]
+    );
+  }
+
+  // Marcador de relatório
+  if (!/inadimpl/i.test(normalized)) {
+    problems.push('Título esperado ausente: o relatório deve conter "Inadimplentes".');
+  }
+
+  // Colunas obrigatórias da tabela de boletos
+  const requiredColumns = ["vencimento", "atraso", "principal", "total"];
+  const missingCols = requiredColumns.filter((c) => !normalized.includes(c));
+  if (missingCols.length) {
+    problems.push(
+      `Colunas esperadas não encontradas: ${missingCols.join(", ")}.`
+    );
+  }
+
+  // Pelo menos uma unidade no padrão "NN NN - NOME"
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const hasUnidade = lines.some((l) => HEADER_RE.test(l));
+  if (!hasUnidade) {
+    problems.push(
+      'Nenhuma unidade no padrão esperado (ex: "12 01 - NOME DO MORADOR").'
+    );
+  }
+
+  // Pelo menos uma linha de boleto
+  const hasBoleto = lines.some((l) => BOLETO_RE.test(l));
+  if (!hasBoleto) {
+    problems.push(
+      "Nenhuma linha de boleto reconhecida (data, atraso, código, principal, total)."
+    );
+  }
+
+  if (problems.length) {
+    throw new PdfValidationError(
+      "O arquivo não parece ser um relatório de inadimplência no formato esperado.",
+      problems
+    );
+  }
+}
+
+
 /** Faz parsing do texto extraído em uma lista de devedores com seus boletos. */
 export function parseDebtors(text: string): Debtor[] {
   const lines = text
