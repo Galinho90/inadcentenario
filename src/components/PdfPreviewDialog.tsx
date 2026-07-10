@@ -126,7 +126,7 @@ export function PdfPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !confirming && onCancel()}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden p-0 gap-0">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden p-0 gap-0 flex flex-col">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-b from-muted/40 to-transparent">
           <div className="flex items-start gap-4">
@@ -167,7 +167,7 @@ export function PdfPreviewDialog({
         </DialogHeader>
 
         {/* Body */}
-        <div className="px-6 py-5 overflow-y-auto space-y-6">
+        <div className="px-6 py-5 overflow-y-auto flex-1 min-h-0 space-y-6">
           {preview && (
             <>
               {/* Stat grid */}
