@@ -63,6 +63,14 @@ const TOTAL_RE = /\btotal\b/i;
 // Linha de boleto: "25/12/25 18 131180 180,00 180,00"
 const BOLETO_RE =
   /^(\d{2}\/\d{2}\/\d{2,4})\s+(\d+)\s+(\S+)\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})$/;
+// Remove trechos como "3° Notificação", "2ª notificacao", "1o Notif." do nome
+const NOTIF_STRIP_RE = /\s*\d+\s*[°ºoa]?\s*notifica[cç][aã]o\.?.*$/i;
+
+/** Limpa o nome extraído do cabeçalho removendo sufixos de notificação. */
+function cleanNome(raw: string): string {
+  return raw.replace(NOTIF_STRIP_RE, "").replace(/\s{2,}/g, " ").trim();
+}
+
 
 export interface PdfPreview {
   titulo: string | null;
