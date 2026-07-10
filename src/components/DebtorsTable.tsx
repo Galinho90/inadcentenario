@@ -26,7 +26,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash, X, SlidersHorizontal } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash, X, SlidersHorizontal, Download } from "lucide-react";
+import { exportDebtorsToExcel } from "@/lib/exportExcel";
+import { toast } from "sonner";
 import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 import {
   countOverdueBoletos,
