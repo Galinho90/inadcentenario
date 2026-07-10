@@ -661,6 +661,25 @@ function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: Vi
                               {proc!.numero_processo}
                               <CopyButton value={proc!.numero_processo} />
                             </span>
+                            {proc!.chave_processo ? (
+                              <Badge
+                                variant="outline"
+                                className="gap-1 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                                title={`Chave cadastrada: ${proc!.chave_processo}`}
+                              >
+                                <KeyRound className="h-3 w-3" />
+                                Com chave
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                title="Chave do processo não cadastrada"
+                              >
+                                <KeyRound className="h-3 w-3 opacity-60" />
+                                Sem chave
+                              </Badge>
+                            )}
                           </>
                         )}
                         {isExtrajudicialAtivo && (
