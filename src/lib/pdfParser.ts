@@ -102,7 +102,7 @@ export function buildPreview(text: string, limit = 5): PdfPreview {
     if (unidades.length < limit) {
       const m = l.match(HEADER_RE);
       if (m) {
-        const nome = m[2].trim();
+        const nome = cleanNome(m[2]);
         const words = nome.split(/\s+/).filter((w) => /[A-Za-zÀ-ÿ]{2,}/.test(w));
         if (words.length >= 2) unidades.push({ unidade: m[1], nome });
       }
@@ -208,7 +208,7 @@ export function parseDebtors(text: string): Debtor[] {
   lines.forEach((l, i) => {
     const m = l.match(HEADER_RE);
     if (m) {
-      const nome = m[2].trim();
+      const nome = cleanNome(m[2]);
       const words = nome.split(/\s+/).filter((w) => /[A-Za-zÀ-ÿ]{2,}/.test(w));
       if (words.length >= 2) {
         headers.push({ idx: i, unidade: m[1], nome });
