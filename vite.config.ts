@@ -37,8 +37,17 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("react-router")) return "router";
           if (id.includes("@tanstack")) return "query";
           if (id.includes("lucide-react")) return "icons";
-          if (id.includes("react-dom") || id.includes("scheduler")) return "react-dom";
-          if (/[\\/]react[\\/]/.test(id)) return "react";
+          // Mantém react + react-dom + jsx-runtime + scheduler no MESMO chunk.
+          // Separá-los quebra a inicialização (React fica undefined para o react-dom).
+          if (
+            id.includes("react-dom") ||
+            id.includes("scheduler") ||
+            /[\\/]react[\\/]/.test(id) ||
+            id.includes("react/jsx-runtime") ||
+            id.includes("react/jsx-dev-runtime")
+          ) {
+            return "react-vendor";
+          }
         },
       },
     },
