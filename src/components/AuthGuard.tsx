@@ -7,10 +7,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setSession(session)
-    );
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    // onAuthStateChange dispara sincronamente com o valor inicial,
+    // então getSession() seria redundante e causaria re-render extra.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
