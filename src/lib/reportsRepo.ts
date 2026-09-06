@@ -193,3 +193,9 @@ export async function saveReport({
 
   return relatorio;
 }
+
+/** Remove um relatório; inadimplentes/boletos caem por ON DELETE CASCADE. */
+export async function deleteReport(reportId: string) {
+  const { error } = await supabase.from("relatorios").delete().eq("id", reportId);
+  if (error) throw error;
+}
