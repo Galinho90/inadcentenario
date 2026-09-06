@@ -31,7 +31,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session) return <Auth redirectTo="/login" />;
+  if (!session) return <Auth />;
 
   return <>{children}</>;
 }
