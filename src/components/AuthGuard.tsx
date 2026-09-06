@@ -7,8 +7,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
   useEffect(() => {
-    // onAuthStateChange dispara sincronamente com o valor inicial,
-    // então getSession() seria redundante e causaria re-render extra.
+    // getSession() busca o estado real imediatamente.
+    // onAuthStateChange só dispara em MUDANÇAS, não no valor inicial.
+    // Sem getSession(), session永远是undefined no primeiro carregamento.
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+    });
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {

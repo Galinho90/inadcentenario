@@ -70,7 +70,7 @@ export function ReportsHistory() {
             <TableHead>Processado em</TableHead>
             <TableHead className="text-center">Inadimplentes</TableHead>
             <TableHead className="text-right">Total</TableHead>
-            <TableHead className="w-32 text-right">Ações</TableHead>
+            <TableHead className="w-20 text-center">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -86,14 +86,15 @@ export function ReportsHistory() {
               <TableCell className="text-right font-medium">
                 {formatBRL(r.total_geral)}
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-1">
+              <TableCell className="text-center">
+                <div className="flex justify-center gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(r.id)}
                     disabled={deletingId === r.id}
-                    title="Apagar"
+                    title="Apagar relatório"
+                    className="text-muted-foreground hover:text-destructive"
                   >
                     {deletingId === r.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
