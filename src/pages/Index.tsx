@@ -17,15 +17,9 @@ import { queryKeys } from "@/lib/queries";
 import { toast } from "sonner";
 
 // Code-split: Recharts + tabela pesada não vão no chunk inicial
-const DashboardOverview = lazy(() =>
-  import("@/components/DashboardOverview").then((m) => ({ default: m.DashboardOverview }))
-);
-const DebtorsTable = lazy(() =>
-  import("@/components/DebtorsTable").then((m) => ({ default: m.DebtorsTable }))
-);
-const ReportsHistory = lazy(() =>
-  import("@/components/ReportsHistory").then((m) => ({ default: m.ReportsHistory }))
-);
+const DashboardOverview = lazy(() => import("@/components/DashboardOverview"));
+const DebtorsTable = lazy(() => import("@/components/DebtorsTable"));
+const ReportsHistory = lazy(() => import("@/components/ReportsHistory"));
 
 const SectionFallback = () => (
   <div className="flex items-center justify-center py-12 text-sm text-muted-foreground gap-2">
