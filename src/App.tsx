@@ -5,10 +5,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthGuard } from "@/components/AuthGuard";
 import Index from "./pages/Index.tsx";
+import Auth from "./pages/Auth.tsx";
 
 // Rotas secundárias ficam fora do bundle inicial
 const Configuracoes = lazy(() => import("./pages/Configuracoes.tsx"));
 const Perfil = lazy(() => import("./pages/Perfil.tsx"));
+const Register = lazy(() => import("./pages/Register.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient({
@@ -37,6 +39,8 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Auth />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
               <Route path="/perfil" element={<Perfil />} />
               <Route path="*" element={<NotFound />} />

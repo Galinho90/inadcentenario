@@ -1,11 +1,18 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { toast } from "sonner";
-import { LogIn } from "lucide-react";
+import { LogIn, Loader2, LockKeyhole } from "lucide-react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -31,12 +38,12 @@ export default function Auth() {
       <Card className="w-full max-w-sm shadow-elevated border-border/60">
         <CardHeader className="text-center space-y-3 pb-4">
           <div className="mx-auto h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 grid place-items-center shadow-elevated">
-            <LogIn className="h-5 w-5 text-primary-foreground" />
+            <LockKeyhole className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-display">INAD Centenário</CardTitle>
+            <CardTitle className="text-2xl font-display">Bem-vindo de volta</CardTitle>
             <CardDescription>
-              Gerencie a inadimplência do condomínio com segurança e eficiência
+              Acesse sua conta para gerenciar a inadimplência do condomínio
             </CardDescription>
           </div>
         </CardHeader>
@@ -68,8 +75,24 @@ export default function Auth() {
               />
             </div>
             <Button type="submit" className="w-full h-10" disabled={loading}>
-              {loading ? "Entrando..." : "Acessar conta"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Acessar conta
+                </>
+              )}
             </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Não tem conta?{" "}
+              <Link to="/register" className="font-medium text-primary hover:underline underline-offset-2">
+                Criar conta
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>
