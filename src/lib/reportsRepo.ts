@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Debtor } from "@/lib/pdfParser";
+import type { Debtor, Boleto } from "@/lib/pdfParser";
 
 export interface ReportSummary {
   id: string;
@@ -60,7 +60,7 @@ export async function saveReport(params: {
       inadimplente_id: inadId,
       vencimento: b.vencimento,
       atraso: b.atraso,
-      codigo: b.codigo,
+      codigo: b.codigo ?? null,
       principal: b.principal,
       total: b.total,
     }));
@@ -119,7 +119,7 @@ export async function loadReport(
   if (inadErr) throw inadErr;
 
   const inadIds = (inad ?? []).map((i) => i.id);
-  let boletosByInad = new Map<string, any[]>();
+  const boletosByInad = new Map<string, Boleto[]>();
   if (inadIds.length) {
     const { data: bols, error: bolErr } = await supabase
       .from("boletos")
@@ -128,7 +128,13 @@ export async function loadReport(
     if (bolErr) throw bolErr;
     (bols ?? []).forEach((b) => {
       const arr = boletosByInad.get(b.inadimplente_id) ?? [];
-      arr.push(b);
+      arr.push({
+        vencimento: b.vencimento,
+        atraso: Number(b.atraso),
+        codigo: b.codigo ?? "",
+        principal: Number(b.principal),
+        total: Number(b.total),
+      });
       boletosByInad.set(b.inadimplente_id, arr);
     });
   }
@@ -137,17 +143,17 @@ export async function loadReport(
     unidade: i.unidade,
     nome: i.nome,
     total: Number(i.total),
-    boletos: (boletosByInad.get(i.id) ?? []).map((b) => ({
-      vencimento: b.vencimento,
-      atraso: b.atraso,
-      codigo: b.codigo ?? "",
-      principal: Number(b.principal),
-      total: Number(b.total),
-    })),
+    boletos: boletosByInad.get(i.id) ?? [],
   }));
 
   return {
-    summary: { ...rel, total_geral: Number(rel.total_geral) },
+    summary: {
+      id: rel.id,
+      nome_arquivo: rel.nome_arquivo,
+      total_geral: Number(rel.total_geral),
+      quantidade_inadimplentes: Number(rel.quantidade_inadimplentes),
+      processado_em: rel.processado_em,
+    },
     debtors,
   };
 }
