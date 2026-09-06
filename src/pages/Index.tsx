@@ -305,7 +305,7 @@ const Index = () => {
               </div>
             ) : debtors.length > 0 ? (
               <Suspense fallback={<SectionFallback />}>
-                <DashboardOverview debtors={debtors} fileName={current?.nome_arquivo} />
+                <DashboardOverview />
                 <DebtorsTable debtors={debtors} />
               </Suspense>
             ) : (
