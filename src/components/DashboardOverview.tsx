@@ -267,22 +267,19 @@ export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
   );
 }
 
-function MiniStat({
-  icon: Icon,
-  label,
-  value,
-}: {
+function MiniStat(p: {
   icon: typeof Wallet;
   label: string;
   value: string;
 }) {
+  const { icon: Icon, label, value } = p;
   return (
     <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-4 py-3 min-w-[140px] transition-all hover:shadow-card hover:-translate-y-0.5">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
         <Icon className="h-3.5 w-3.5" />
-        {label}
+        {p.label}
       </div>
-      <p className="text-lg font-display font-semibold tabular-nums">{value}</p>
+      <p className="text-lg font-display font-semibold tabular-nums">{p.value}</p>
     </div>
   );
 }
