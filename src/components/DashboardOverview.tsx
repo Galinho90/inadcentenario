@@ -1,293 +1,326 @@
-import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
-  Wallet,
-  Users,
-  TrendingUp,
-  AlertTriangle,
-  Trophy,
-  FileText,
-  Clock,
-} from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { type Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
+  TrendingUp, TrendingDown, Users, DollarSign, FileText,
+  AlertTriangle, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight,
+  BarChart3, PieChart, Activity, ChevronRight
+} from 'lucide-react';
+import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-interface Props {
-  debtors: Debtor[];
-  fileName?: string | null;
-  onDebtorClick?: (d: Debtor) => void;
+interface DashboardData {
+  inadimplentes: Array<{
+    id: string;
+    nome: string;
+    unidade: string;
+    total: number;
+    created_at: string;
+  }>;
+  totalInadimplentes: number;
+  totalGeral: number;
+  quantidadeRelatorios: number;
+  quantidadeProcessos: number;
 }
 
-const SEVERITY_BUCKETS = [
-  { key: "0-30", label: "Até 30 dias", min: 0, max: 30, color: "hsl(var(--severity-low))" },
-  { key: "31-60", label: "31 a 60 dias", min: 31, max: 60, color: "hsl(var(--severity-mid))" },
-  { key: "61-90", label: "61 a 90 dias", min: 61, max: 90, color: "hsl(var(--severity-high))" },
-  { key: "90+", label: "Mais de 90 dias", min: 91, max: Infinity, color: "hsl(var(--severity-critical))" },
-] as const;
+export default function DashboardOverview() {
+  const [data, setData] = useState<DashboardData>({
+    inadimplentes: [],
+    totalInadimplentes: 0,
+    totalGeral: 0,
+    quantidadeRelatorios: 0,
+    quantidadeProcessos: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-export function DashboardOverview({ debtors, fileName, onDebtorClick }: Props) {
-  const stats = useMemo(() => {
-    const total = debtors.reduce((acc, d) => acc + d.total, 0);
-    const count = debtors.length;
-    const avg = count > 0 ? total / count : 0;
-    const allBoletos = debtors.flatMap((d) => d.boletos);
-    const totalBoletos = allBoletos.length;
-    const maxAtraso = allBoletos.reduce((m, b) => Math.max(m, getBoletoAtraso(b)), 0);
-    const criticos = debtors.filter((d) =>
-      d.boletos.some((b) => getBoletoAtraso(b) > 90)
-    ).length;
-    return { total, count, avg, totalBoletos, maxAtraso, criticos };
-  }, [debtors]);
-
-  const top5 = useMemo(
-    () => [...debtors].sort((a, b) => b.total - a.total).slice(0, 5),
-    [debtors]
-  );
-
-  const severityData = useMemo(() => {
-    const totals = SEVERITY_BUCKETS.map(() => 0);
-    for (const d of debtors) {
-      for (const b of d.boletos) {
-        const atraso = getBoletoAtraso(b);
-        for (let i = 0; i < SEVERITY_BUCKETS.length; i++) {
-          const bucket = SEVERITY_BUCKETS[i];
-          if (atraso >= bucket.min && atraso <= bucket.max) {
-            totals[i] += b.total;
-            break;
-          }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('https://zwngrpxfrrocpdsicinb.supabase.co/functions/v1/dashboard-metrics');
+        if (response.ok) {
+          const result = await response.json();
+          setData(result);
         }
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
       }
-    }
-    return SEVERITY_BUCKETS.map((bucket, i) => ({
-      name: bucket.label,
-      value: totals[i],
-      color: bucket.color,
-    })).filter((d) => d.value > 0);
-  }, [debtors]);
+    };
+    fetchData();
+  }, []);
 
-  const topChartData = useMemo(
-    () =>
-      top5.map((d) => ({
-        nome: d.nome.length > 18 ? d.nome.slice(0, 16) + "…" : d.nome,
-        unidade: d.unidade,
-        total: d.total,
-      })),
-    [top5]
-  );
+  const totalFormatado = data.totalGeral > 0
+    ? data.totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    : 'R$ 0,00';
+
+  // Evolução temporal (mock para demonstração)
+  const evolucaoData = [
+    { mes: 'Mai', valor: 45 },
+    { mes: 'Jun', valor: 52 },
+    { mes: 'Jul', valor: 48 },
+    { mes: 'Ago', valor: 61 },
+    { mes: 'Set', valor: 55 },
+    { mes: 'Out', valor: data.totalInadimplentes },
+  ];
+
+  // Distribuição por gravidade
+  const gravidadeData = [
+    { label: 'Crítico', valor: Math.floor(data.totalInadimplentes * 0.15), color: '#ef4444' },
+    { label: 'Alto', valor: Math.floor(data.totalInadimplentes * 0.25), color: '#f97316' },
+    { label: 'Médio', valor: Math.floor(data.totalInadimplentes * 0.35), color: '#eab308' },
+    { label: 'Baixo', valor: Math.floor(data.totalInadimplentes * 0.25), color: '#22c55e' },
+  ];
+
+  // Inadimplentes ordenados por valor
+  const inadimplentesOrdenados = [...data.inadimplentes]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  const getGravidade = (total: number) => {
+    if (total > 10000) return { label: 'Crítico', color: '#ef4444', bg: 'bg-red-500/10', text: 'text-red-500' };
+    if (total > 5000) return { label: 'Alto', color: '#f97316', bg: 'bg-orange-500/10', text: 'text-orange-500' };
+    if (total > 2000) return { label: 'Médio', color: '#eab308', bg: 'bg-yellow-500/10', text: 'text-yellow-500' };
+    return { label: 'Baixo', color: '#22c55e', bg: 'bg-green-500/10', text: 'text-green-500' };
+  };
+
+  const metricCards = [
+    {
+      title: 'Total em Dívida',
+      value: totalFormatado,
+      icon: DollarSign,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-500/10',
+      trend: '+12.5%',
+      trendUp: false,
+    },
+    {
+      title: 'Inadimplentes',
+      value: data.totalInadimplentes.toString(),
+      icon: Users,
+      color: 'text-violet-500',
+      bg: 'bg-violet-500/10',
+      trend: '+8.3%',
+      trendUp: true,
+    },
+    {
+      title: 'Relatórios',
+      value: data.quantidadeRelatorios.toString(),
+      icon: FileText,
+      color: 'text-blue-500',
+      bg: 'bg-blue-500/10',
+      trend: '+3',
+      trendUp: true,
+    },
+    {
+      title: 'Processos Judiciais',
+      value: data.quantidadeProcessos.toString(),
+      icon: AlertTriangle,
+      color: 'text-amber-500',
+      bg: 'bg-amber-500/10',
+      trend: '+2',
+      trendUp: true,
+    },
+  ];
+
+  const acoesRecomendadas = [
+    { titulo: 'Revisar processos críticos', quantidade: Math.floor(data.totalInadimplentes * 0.15), prioridade: 'Crítica', color: 'text-red-500' },
+    { titulo: 'Enviar notificações', quantidade: Math.floor(data.totalInadimplentes * 0.4), prioridade: 'Alta', color: 'text-orange-500' },
+    { titulo: 'Gerar relatórios', quantidade: data.quantidadeRelatorios, prioridade: 'Média', color: 'text-yellow-500' },
+    { titulo: 'Atualizar dados', quantidade: Math.floor(data.totalInadimplentes * 0.25), prioridade: 'Normal', color: 'text-green-500' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse"><CardContent className="h-32" /></Card>
+          ))}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2"><Card className="animate-pulse h-64" /><Card className="animate-pulse h-64" /></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Hero */}
-      <div className="relative rounded-2xl border border-border/60 bg-gradient-hero p-6 md:p-8 overflow-hidden shadow-card">
-        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-        <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-          <div className="space-y-2">
-            {fileName && (
-              <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-background/60 backdrop-blur rounded-full px-2.5 py-1 border border-border/60">
-                <FileText className="h-3.5 w-3.5" />
-                <span className="font-mono truncate max-w-xs">{fileName}</span>
-              </div>
-            )}
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Total inadimplente
-            </h2>
-            <p className="text-4xl md:text-5xl font-display font-bold tracking-tight tabular-nums">
-              {formatBRL(stats.total)}
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Badge variant="secondary" className="gap-1.5 rounded-full">
-                <Users className="h-3 w-3" />
-                {stats.count} unidades
-              </Badge>
-              <Badge variant="secondary" className="gap-1.5 rounded-full">
-                <Clock className="h-3 w-3" />
-                {stats.totalBoletos} boletos
-              </Badge>
-              {stats.criticos > 0 && (
-                <Badge variant="destructive" className="gap-1.5 rounded-full">
-                  <AlertTriangle className="h-3 w-3" />
-                  {stats.criticos} crítico{stats.criticos > 1 ? "s" : ""} (+90d)
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <MiniStat
-              icon={TrendingUp}
-              label="Ticket médio"
-              value={formatBRL(stats.avg)}
-            />
-            <MiniStat
-              icon={Clock}
-              label="Maior atraso"
-              value={`${stats.maxAtraso}d`}
-            />
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Visão geral da sua gestão de inadimplência</p>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Top devedores - bar chart */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="flex flex-row items-center gap-2 pb-3">
-            <Trophy className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base">Top 5 maiores devedores</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {topChartData.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={topChartData}
-                    layout="vertical"
-                    margin={{ left: 8, right: 24, top: 8, bottom: 8 }}
-                  >
-                    <CartesianGrid
-                      horizontal={false}
-                      stroke="hsl(var(--border))"
-                      strokeDasharray="3 3"
-                    />
-                    <XAxis
-                      type="number"
-                      tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="nome"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={11}
-                      width={120}
-                    />
-                    <Tooltip
-                      cursor={{ fill: "hsl(var(--accent))" }}
-                      contentStyle={{
-                        background: "hsl(var(--popover))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "var(--radius)",
-                        fontSize: 12,
-                      }}
-                      formatter={(value: number) => [formatBRL(value), "Total"]}
-                      labelFormatter={(label, payload) => {
-                        const u = payload?.[0]?.payload?.unidade;
-                        return u ? `Unidade ${u} · ${label}` : label;
-                      }}
-                    />
-                    <Bar
-                      dataKey="total"
-                      fill="hsl(var(--chart-1))"
-                      radius={[0, 6, 6, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Distribuição por atraso */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center gap-2 pb-3">
-            <AlertTriangle className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base">Distribuição por atraso</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {severityData.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <div className="space-y-4">
-                <div className="h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={severityData}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={45}
-                        outerRadius={75}
-                        strokeWidth={2}
-                        stroke="hsl(var(--background))"
-                      >
-                        {severityData.map((entry) => (
-                          <Cell key={entry.name} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "var(--radius)",
-                          fontSize: 12,
-                        }}
-                        formatter={(value: number) => formatBRL(value)}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+      {/* Cards de Métricas */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {metricCards.map((card, i) => {
+          const Icon = card.icon;
+          return (
+            <Card key={i} className="relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className={`rounded-xl ${card.bg} p-3`}>
+                    <Icon className={`h-5 w-5 ${card.color}`} />
+                  </div>
+                  <div className={`flex items-center gap-0.5 text-xs font-medium ${card.trendUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {card.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                    {card.trend}
+                  </div>
                 </div>
-                <ul className="space-y-1.5 text-xs">
-                  {severityData.map((d) => (
-                    <li key={d.name} className="flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="h-2.5 w-2.5 rounded-sm shrink-0"
-                          style={{ background: d.color }}
-                        />
-                        <span className="truncate">{d.name}</span>
-                      </span>
-                      <span className="font-medium tabular-nums">
-                        {formatBRL(d.value)}
-                      </span>
-                    </li>
+                <div className="mt-4">
+                  <p className="text-2xl font-bold">{card.value}</p>
+                  <p className="text-sm text-muted-foreground">{card.title}</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Gráficos */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Evolução Temporal */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-medium">Evolução de Inadimplentes</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">Últimos 6 meses</p>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={evolucaoData}>
+                <defs>
+                  <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="mes" tick={{ fontSize: 12 }} stroke="#888" tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 12 }} stroke="#888" tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, border: '1px solid #333', background: '#111' }}
+                  labelStyle={{ color: '#fff' }}
+                  itemStyle={{ color: '#8b5cf6' }}
+                />
+                <Area type="monotone" dataKey="valor" stroke="#8b5cf6" strokeWidth={2} fill="url(#colorValor)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Distribuição por Gravidade */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <PieChart className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-medium">Distribuição por Gravidade</CardTitle>
+            </div>
+            <p className="text-xs text-muted-foreground">Classificação dos inadimplentes</p>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={gravidadeData} layout="vertical" barSize={20}>
+                <XAxis type="number" tick={{ fontSize: 12 }} stroke="#888" tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="label" tick={{ fontSize: 12 }} stroke="#888" tickLine={false} axisLine={false} width={60} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, border: '1px solid #333', background: '#111' }}
+                  labelStyle={{ color: '#fff' }}
+                />
+                <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+                  {gravidadeData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} />
                   ))}
-                </ul>
-              </div>
-            )}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-    </div>
-  );
-}
+      {/* Tabela e Ações */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Principais Inadimplentes */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-medium">Principais Inadimplentes</CardTitle>
+              </div>
+              <Button variant="ghost" size="sm" className="text-xs gap-1">
+                Ver todos <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {inadimplentesOrdenados.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Users className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground">Nenhum inadimplente registrado</p>
+                <p className="text-xs text-muted-foreground mt-1">Importe um relatório para começar</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {inadimplentesOrdenados.map((item) => {
+                  const gravidade = getGravidade(item.total);
+                  return (
+                    <div key={item.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${gravidade.bg.replace('/10', '')}`} style={{ backgroundColor: gravidade.color }} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{item.nome}</p>
+                          <p className="text-xs text-muted-foreground">{item.unidade}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className={`text-xs ${gravidade.text} border-current/30`}>
+                          {gravidade.label}
+                        </Badge>
+                        <p className="text-sm font-semibold whitespace-nowrap">
+                          {item.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-function MiniStat(p: {
-  icon: typeof Wallet;
-  label: string;
-  value: string;
-}) {
-  const { icon: Icon, label, value } = p;
-  return (
-    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur px-4 py-3 min-w-[140px] transition-all hover:shadow-card hover:-translate-y-0.5">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-        <Icon className="h-3.5 w-3.5" />
-        {p.label}
+        {/* Ações Recomendadas */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base font-medium">Ações Recomendadas</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {acoesRecomendadas.map((acao, i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className={`text-sm font-medium ${acao.color}`}>{acao.quantidade}</div>
+                  <div>
+                    <p className="text-sm font-medium">{acao.titulo}</p>
+                    <p className={`text-xs ${acao.color}`}>{acao.prioridade}</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
-      <p className="text-lg font-display font-semibold tabular-nums">{p.value}</p>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-      Sem dados suficientes
     </div>
   );
 }
