@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { listProcessos, type ProcessoJudicial } from "./processosRepo";
-import { listReports, type ReportSummary } from "./reportsRepo";
+import { loadAllReports, type ReportSummary } from "./reportsRepo";
 
 /** Chaves canônicas de cache — compartilhadas entre componentes para deduplicar requests. */
 export const queryKeys = {
@@ -21,7 +21,7 @@ export function useProcessos() {
 export function useReports() {
   return useQuery<ReportSummary[]>({
     queryKey: queryKeys.reports,
-    queryFn: listReports,
+    queryFn: loadAllReports,
     staleTime: 30_000,
   });
 }
