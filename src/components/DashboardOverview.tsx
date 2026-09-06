@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,21 +38,50 @@ export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
       try {
-        const response = await fetch('https://zwngrpxfrrocpdsicinb.supabase.co/functions/v1/dashboard-metrics');
-        if (response.ok) {
-          const result = await response.json();
-          setData(result);
-        }
-      } catch {
-        // silently fail
+        const [inadRes, relRes, procRes] = await Promise.all([
+          supabase
+            .from('inadimplentes')
+            .select('id, nome, unidade, total, created_at')
+            .order('total', { ascending: false })
+            .limit(200),
+          supabase.from('relatorios').select('id', { count: 'exact', head: true }),
+          supabase.from('processos_judiciais').select('id', { count: 'exact', head: true }),
+        ]);
+
+        if (cancelled) return;
+
+        const inadimplentes = (inadRes.data ?? []).map((r) => ({
+          id: String(r.id),
+          nome: r.nome ?? '',
+          unidade: r.unidade ?? '',
+          total: Number(r.total ?? 0),
+          created_at: r.created_at ?? '',
+        }));
+
+        setData({
+          inadimplentes,
+          totalInadimplentes: inadimplentes.length,
+          totalGeral: inadimplentes.reduce((acc, i) => acc + i.total, 0),
+          quantidadeRelatorios: relRes.count ?? 0,
+          quantidadeProcessos: procRes.count ?? 0,
+        });
+      } catch (err) {
+        console.error('Falha ao carregar métricas do painel', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+
     fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
 
   const totalFormatado = data.totalGeral > 0
     ? data.totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
