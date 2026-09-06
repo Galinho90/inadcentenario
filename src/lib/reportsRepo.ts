@@ -137,3 +137,59 @@ export async function loadAllReports() {
     })
   );
 }
+
+/**
+ * Persiste um relatório completo: cabeçalho, inadimplentes e respectivos boletos.
+ * Best-effort: em caso de falha nas etapas seguintes, o relatório já criado é removido.
+ */
+export async function saveReport({
+  nomeArquivo,
+  debtors,
+}: {
+  nomeArquivo: string;
+  debtors: Debtor[];
+}) {
+  const relatorio = await insertReport({ nomeArquivo, debtors });
+
+  try {
+    if (debtors.length > 0) {
+      const { data: inseridos, error: inadError } = await supabase
+        .from("inadimplentes")
+        .insert(
+          debtors.map((d) => ({
+            relatorio_id: relatorio.id,
+            unidade: d.unidade,
+            nome: d.nome,
+            total: d.total,
+          }))
+        )
+        .select("id, unidade, nome");
+
+      if (inadError) throw inadError;
+
+      const rows = inseridos ?? [];
+      const boletos = debtors.flatMap((d, index) => {
+        const parent = rows[index];
+        if (!parent) return [];
+        return d.boletos.map((b) => ({
+          inadimplente_id: parent.id as string,
+          vencimento: b.vencimento,
+          atraso: b.atraso,
+          codigo: b.codigo,
+          principal: b.principal,
+          total: b.total,
+        }));
+      });
+
+      if (boletos.length > 0) {
+        const { error: boletoError } = await supabase.from("boletos").insert(boletos);
+        if (boletoError) throw boletoError;
+      }
+    }
+  } catch (err) {
+    await supabase.from("relatorios").delete().eq("id", relatorio.id);
+    throw err;
+  }
+
+  return relatorio;
+}
