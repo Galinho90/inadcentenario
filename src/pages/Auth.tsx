@@ -35,7 +35,9 @@ export default function Auth() {
           </div>
           <div className="space-y-1">
             <CardTitle className="text-2xl font-display">INAD Centenário</CardTitle>
-            <CardDescription>Faça login para acessar o sistema</CardDescription>
+            <CardDescription>
+              Gerencie a inadimplência do condomínio com segurança e eficiência
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -66,7 +68,7 @@ export default function Auth() {
               />
             </div>
             <Button type="submit" className="w-full h-10" disabled={loading}>
-              {loading ? "Aguarde..." : "Entrar"}
+              {loading ? "Entrando..." : "Acessar conta"}
             </Button>
           </form>
         </CardContent>

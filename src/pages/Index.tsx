@@ -59,7 +59,7 @@ const Index = () => {
       }
     } catch (e) {
       console.error(e);
-      toast.error("Falha ao carregar lista atual");
+      toast.error("Falha ao carregar a lista atual");
     } finally {
       setLoadingCurrent(false);
     }
@@ -100,7 +100,7 @@ const Index = () => {
       setPending({ file: f, text, preview: buildPreview(text) });
     } catch (e) {
       console.error(e);
-      setError("Falha ao processar o PDF. Verifique se o arquivo não está corrompido.");
+      setError("Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.");
     } finally {
       setProcessing(false);
     }
@@ -113,19 +113,19 @@ const Index = () => {
       const { parseDebtors } = await import("@/lib/pdfParser");
       const result = parseDebtors(pending.text);
       if (result.length === 0) {
-        setError("Nenhuma unidade encontrada no padrão esperado (ex: '12 01' + nome + linha 'Total').");
+        setError("Nenhuma unidade encontrada no relatório. Verifique o formato do PDF e tente novamente.");
         setPending(null);
         return;
       }
       await saveReport({ nomeArquivo: pending.file.name, debtors: result });
-      toast.success(`Lista atualizada — ${result.length} inadimplentes`);
+      toast.success(`${result.length} inadimplente${result.length !== 1 ? "s" : ""} importado${result.length !== 1 ? "s" : ""} com sucesso`);
       setShowUpload(false);
       setPending(null);
       qc.invalidateQueries({ queryKey: queryKeys.reports });
       await refreshCurrent();
     } catch (e) {
       console.error(e);
-      setError("Falha ao salvar o relatório.");
+      setError("Erro ao salvar o relatório. Tente novamente.");
     } finally {
       setConfirming(false);
     }
@@ -145,7 +145,7 @@ const Index = () => {
                 Inadimplência
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Gestão de inadimplentes — Condomínio
+                Gestão — Condomínio
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ const Index = () => {
               value="atual"
               className="text-sm px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-smooth"
             >
-              Lista atual
+              Visão atual
             </TabsTrigger>
             <TabsTrigger
               value="historico"
@@ -210,7 +210,7 @@ const Index = () => {
                     <div className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span>
-                        Atualizado em{" "}
+                        Dados de{" "}
                         <strong className="text-foreground font-medium">
                           {new Date(current.processado_em).toLocaleString("pt-BR", {
                             day: "2-digit",
@@ -230,12 +230,12 @@ const Index = () => {
                 ) : loadingCurrent ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                    Carregando lista atual...
+                    Carregando dados...
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                    Nenhum relatório enviado ainda. Comece enviando um PDF.
+                    Nenhum relatório importado ainda. Envie um PDF para começar.
                   </span>
                 )}
               </div>
@@ -266,7 +266,7 @@ const Index = () => {
                   }`}
                 >
                   <Upload className="h-4 w-4 mr-1.5" />
-                  {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Enviar PDF"}
+                  {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Importar PDF"}
                 </Button>
               </div>
             </div>
@@ -277,13 +277,11 @@ const Index = () => {
                 {current && (
                   <Alert className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/10 dark:border-amber-500/30">
                     <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <AlertTitle className="text-amber-900 dark:text-amber-300">Atenção</AlertTitle>
+                    <AlertTitle className="text-amber-900 dark:text-amber-300">Sobreposição de dados</AlertTitle>
                     <AlertDescription className="text-amber-800/80 dark:text-amber-400/80">
-                      Ao enviar um novo PDF, a lista atual será{" "}
-                      <strong>substituída integralmente</strong>. O relatório
-                      anterior permanece disponível na aba Histórico, e os
-                      números de processo judicial cadastrados continuam salvos
-                      por morador.
+                      Um novo PDF substituirá a lista atual. O relatório anterior será
+                      movido para o Histórico e os processos judiciais já cadastrados
+                      permanecerão vinculados aos respectivos moradores.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -300,7 +298,7 @@ const Index = () => {
             {error && (
               <Alert variant="destructive" className="animate-in slide-in-from-top-2 duration-200">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Não foi possível processar</AlertTitle>
+                <AlertTitle>Erro no processamento</AlertTitle>
                 <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
               </Alert>
             )}
@@ -321,9 +319,12 @@ const Index = () => {
                 <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
                   <Upload className="h-7 w-7 text-muted-foreground/50" />
                 </div>
-                <h3 className="font-medium text-lg text-foreground mb-1">Nenhum dado ainda</h3>
+                <h3 className="font-medium text-lg text-foreground mb-1">
+                  Pronto para começar
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  Envie um PDF de inadimplência para visualizar o dashboard e gerenciar os devedores.
+                  Importe o relatório de inadimplência em PDF para visualizar o
+                  dashboard e gerenciar os devedores do condomínio.
                 </p>
                 <Button
                   variant="default"
@@ -332,7 +333,7 @@ const Index = () => {
                   onClick={() => setShowUpload(true)}
                 >
                   <Upload className="h-4 w-4 mr-1.5" />
-                  Enviar PDF
+                  Importar relatório
                 </Button>
               </div>
             )}
