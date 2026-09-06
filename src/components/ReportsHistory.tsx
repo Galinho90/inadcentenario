@@ -111,3 +111,5 @@ export function ReportsHistory() {
     </Card>
   );
 }
+
+export default ReportsHistory;

@@ -811,3 +811,5 @@ function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: Vi
     </div>
   );
 }
+
+export default DebtorsTable;
