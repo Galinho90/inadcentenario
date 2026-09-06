@@ -28,9 +28,9 @@ const ReportsHistory = lazy(() =>
 );
 
 const SectionFallback = () => (
-  <div className="flex items-center justify-center py-12 text-muted-foreground">
-    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-    Carregando...
+  <div className="flex items-center justify-center py-12 text-sm text-muted-foreground gap-2">
+    <Loader2 className="h-4 w-4 animate-spin" />
+    Carregando componentes...
   </div>
 );
 
@@ -132,24 +132,30 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+    <div className="min-h-screen bg-gradient-surface">
+      {/* Header premium */}
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/90 backdrop-blur-md glass">
         <div className="container py-4 md:py-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 grid place-items-center shadow-elevated shrink-0">
+            <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 grid place-items-center shadow-elevated shrink-0 ring-2 ring-primary/20">
               <span className="text-primary-foreground font-display font-bold text-sm">IC</span>
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg md:text-xl font-display font-semibold tracking-tight truncate">
-                Inadimplência — Dashboard
+              <h1 className="text-lg md:text-xl font-display font-semibold tracking-tight">
+                Inadimplência
               </h1>
-              <p className="text-xs md:text-sm text-muted-foreground truncate">
-                Gestão de inadimplentes do condomínio
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Gestão de inadimplentes — Condomínio
               </p>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="hidden sm:inline-flex hover:bg-accent transition-smooth"
+            >
               <Link to="/perfil">
                 <UserCircle className="h-4 w-4 mr-1.5" />
                 Perfil
@@ -158,7 +164,12 @@ const Index = () => {
             <Button variant="ghost" size="sm" asChild className="sm:hidden" aria-label="Perfil">
               <Link to="/perfil"><UserCircle className="h-4 w-4" /></Link>
             </Button>
-            <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="hidden sm:inline-flex hover:bg-accent hover:border-primary/30 transition-smooth"
+            >
               <Link to="/configuracoes">
                 <Settings className="h-4 w-4 mr-1.5" />
                 Configurações
@@ -171,13 +182,18 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container py-6 md:py-8 space-y-6">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="h-10">
-            <TabsTrigger value="atual" className="text-sm">Lista atual</TabsTrigger>
+      <main className="container py-6 md:py-8 space-y-6 max-w-7xl">
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
+          <TabsList className="h-11 px-1.5 gap-1 bg-muted/60 border border-border/50">
+            <TabsTrigger
+              value="atual"
+              className="text-sm px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-smooth"
+            >
+              Lista atual
+            </TabsTrigger>
             <TabsTrigger
               value="historico"
-              className="text-sm"
+              className="text-sm px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-smooth"
               onMouseEnter={prefetchHistory}
               onFocus={prefetchHistory}
             >
@@ -185,27 +201,45 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="atual" className="space-y-6 mt-6">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="text-sm text-muted-foreground">
+          <TabsContent value="atual" className="space-y-5 mt-5">
+            {/* Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-sm text-muted-foreground min-w-0">
                 {current ? (
-                  <>
-                    Última atualização:{" "}
-                    <strong className="text-foreground">
-                      {new Date(current.processado_em).toLocaleString("pt-BR")}
-                    </strong>{" "}
-                    · arquivo{" "}
-                    <span className="font-mono text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>
+                        Atualizado em{" "}
+                        <strong className="text-foreground font-medium">
+                          {new Date(current.processado_em).toLocaleString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </strong>
+                      </span>
+                    </div>
+                    <span className="hidden sm:inline text-border">·</span>
+                    <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded-md">
                       {current.nome_arquivo}
                     </span>
-                  </>
+                  </div>
                 ) : loadingCurrent ? (
-                  "Carregando lista atual..."
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    Carregando lista atual...
+                  </span>
                 ) : (
-                  "Nenhum relatório enviado ainda."
+                  <span className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                    Nenhum relatório enviado ainda. Comece enviando um PDF.
+                  </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
@@ -216,14 +250,20 @@ const Index = () => {
                     toast.success("Dados atualizados");
                   }}
                   disabled={loadingCurrent}
+                  className="transition-smooth hover:bg-accent hover:border-primary/30 hover:shadow-sm"
                 >
                   <RefreshCw className={`h-4 w-4 mr-1.5 ${loadingCurrent ? "animate-spin" : ""}`} />
-                  Atualizar agora
+                  Atualizar
                 </Button>
                 <Button
-                  variant={showUpload ? "ghost" : "default"}
+                  variant={showUpload ? "outline" : "default"}
                   size="sm"
                   onClick={() => setShowUpload((v) => !v)}
+                  className={`transition-smooth ${
+                    showUpload
+                      ? "bg-muted text-foreground hover:bg-muted/80 border-primary/30"
+                      : "shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                  }`}
                 >
                   <Upload className="h-4 w-4 mr-1.5" />
                   {showUpload ? "Cancelar" : current ? "Atualizar lista" : "Enviar PDF"}
@@ -231,13 +271,14 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Upload area */}
             {(showUpload || !current) && !loadingCurrent && (
               <div className="space-y-3">
                 {current && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Atenção</AlertTitle>
-                    <AlertDescription>
+                  <Alert className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/10 dark:border-amber-500/30">
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <AlertTitle className="text-amber-900 dark:text-amber-300">Atenção</AlertTitle>
+                    <AlertDescription className="text-amber-800/80 dark:text-amber-400/80">
                       Ao enviar um novo PDF, a lista atual será{" "}
                       <strong>substituída integralmente</strong>. O relatório
                       anterior permanece disponível na aba Histórico, e os
@@ -255,31 +296,49 @@ const Index = () => {
               </div>
             )}
 
+            {/* Error */}
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="animate-in slide-in-from-top-2 duration-200">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Não foi possível processar</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
               </Alert>
             )}
 
+            {/* Content */}
             {loadingCurrent ? (
-              <div className="flex items-center justify-center py-16 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Carregando...
+              <div className="flex items-center justify-center py-20 text-muted-foreground gap-3">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Carregando dashboard...</span>
               </div>
             ) : debtors.length > 0 ? (
               <Suspense fallback={<SectionFallback />}>
-                <DashboardOverview
-                  debtors={debtors}
-                  fileName={current?.nome_arquivo}
-                />
+                <DashboardOverview debtors={debtors} fileName={current?.nome_arquivo} />
                 <DebtorsTable debtors={debtors} />
               </Suspense>
-            ) : null}
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                  <Upload className="h-7 w-7 text-muted-foreground/50" />
+                </div>
+                <h3 className="font-medium text-lg text-foreground mb-1">Nenhum dado ainda</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Envie um PDF de inadimplência para visualizar o dashboard e gerenciar os devedores.
+                </p>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="mt-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-smooth"
+                  onClick={() => setShowUpload(true)}
+                >
+                  <Upload className="h-4 w-4 mr-1.5" />
+                  Enviar PDF
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="historico" className="mt-6">
+          <TabsContent value="historico" className="mt-5">
             <Suspense fallback={<SectionFallback />}>
               <ReportsHistory />
             </Suspense>
