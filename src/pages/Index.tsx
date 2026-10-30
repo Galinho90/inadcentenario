@@ -1,15 +1,19 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { PdfDropzone } from "@/components/PdfDropzone";
 import { PdfPreviewDialog } from "@/components/PdfPreviewDialog";
+import { PeriodoFilter } from "@/components/PeriodoFilter";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2, RefreshCw, Settings, Upload, UserCircle } from "lucide-react";
+import { AlertCircle, CalendarRange, Loader2, RefreshCw, Settings, Upload, UserCircle } from "lucide-react";
 import type { Debtor, PdfPreview } from "@/lib/pdfParser";
+import { formatBRL } from "@/lib/pdfParser";
+import { recortarPorPeriodo } from "@/lib/periodoFilter";
 import {
   loadLatestReport,
-  saveReport,
+  importReport,
   type ReportSummary,
 } from "@/lib/reportsRepo";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,6 +43,39 @@ const Index = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [pending, setPending] = useState<{ file: File; text: string; preview: PdfPreview } | null>(null);
   const [confirming, setConfirming] = useState(false);
+  /** Mês de vencimento selecionado (null = todos os vencimentos). */
+  const [periodo, setPeriodo] = useState<string | null>(null);
+
+  /** Recorte da inadimplência pelo mês de vencimento escolhido. */
+  const recorte = useMemo(
+    () => recortarPorPeriodo(debtors, periodo),
+    [debtors, periodo]
+  );
+
+  const periodoLabel = useMemo(
+    () => recorte.periodos.find((p) => p.chave === periodo)?.label ?? null,
+    [recorte.periodos, periodo]
+  );
+
+  // Mantém a seleção válida: se o relatório novo não tiver mais o mês escolhido,
+  // volta para o mês mais recente disponível.
+  useEffect(() => {
+    if (recorte.periodos.length === 0) {
+      if (periodo) setPeriodo(null);
+      return;
+    }
+    if (periodo && !recorte.periodos.some((p) => p.chave === periodo)) {
+      setPeriodo(recorte.periodos[0].chave);
+    }
+  }, [periodo, recorte.periodos]);
+
+  // Ao abrir a aba "Por mês" sem seleção, já entra no mês mais recente.
+  function handleTabChange(value: string) {
+    setTab(value);
+    if (value === "mes" && !periodo && recorte.periodos.length > 0) {
+      setPeriodo(recorte.periodos[0].chave);
+    }
+  }
 
   const refreshCurrent = useCallback(async () => {
     setLoadingCurrent(true);
@@ -111,8 +148,13 @@ const Index = () => {
         setPending(null);
         return;
       }
-      await saveReport({ nomeArquivo: pending.file.name, debtors: result });
-      toast.success(`${result.length} inadimplente${result.length !== 1 ? "s" : ""} importado${result.length !== 1 ? "s" : ""} com sucesso`);
+      const diff = await importReport({ nomeArquivo: pending.file.name, debtors: result });
+      toast.success(
+        `${diff.quantidade} inadimplente${diff.quantidade !== 1 ? "s" : ""} na lista atual: ` +
+          `${diff.atualizados} atualizado${diff.atualizados !== 1 ? "s" : ""}, ` +
+          `${diff.criados} novo${diff.criados !== 1 ? "s" : ""}` +
+          (diff.removidos > 0 ? `, ${diff.removidos} removido${diff.removidos !== 1 ? "s" : ""}` : "")
+      );
       setShowUpload(false);
       setPending(null);
       qc.invalidateQueries({ queryKey: queryKeys.reports });
@@ -177,13 +219,20 @@ const Index = () => {
       </header>
 
       <main className="container py-6 md:py-8 space-y-6 max-w-7xl">
-        <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="h-11 px-1.5 gap-1 bg-muted/60 border border-border/50">
             <TabsTrigger
               value="atual"
               className="text-sm px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-smooth"
             >
               Visão atual
+            </TabsTrigger>
+            <TabsTrigger
+              value="mes"
+              className="text-sm px-4 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-smooth"
+            >
+              <CalendarRange className="h-4 w-4 mr-1.5" />
+              Por mês
             </TabsTrigger>
             <TabsTrigger
               value="historico"
@@ -273,9 +322,11 @@ const Index = () => {
                     <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                     <AlertTitle className="text-amber-900 dark:text-amber-300">Sobreposição de dados</AlertTitle>
                     <AlertDescription className="text-amber-800/80 dark:text-amber-400/80">
-                      Um novo PDF substituirá a lista atual. O relatório anterior será
-                      movido para o Histórico e os processos judiciais já cadastrados
-                      permanecerão vinculados aos respectivos moradores.
+                      O novo PDF sobrescreve a lista atual: as dívidas já existentes são
+                      atualizadas, apenas as novas são criadas e as que não aparecem
+                      mais no relatório saem da lista. O relatório anterior fica no
+                      Histórico e os processos judiciais já cadastrados permanecem
+                      vinculados aos respectivos moradores.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -305,8 +356,16 @@ const Index = () => {
               </div>
             ) : debtors.length > 0 ? (
               <Suspense fallback={<SectionFallback />}>
-                <DashboardOverview />
-                <DebtorsTable debtors={debtors} />
+                <ErrorBoundary label="o dashboard">
+                  <DashboardOverview
+                    debtors={debtors}
+                    totalGeral={debtors.reduce((acc, d) => acc + (Number(d.total) || 0), 0)}
+                    quantidadeInadimplentes={debtors.length}
+                  />
+                </ErrorBoundary>
+                <ErrorBoundary label="a tabela de inadimplentes">
+                  <DebtorsTable debtors={debtors} />
+                </ErrorBoundary>
               </Suspense>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -330,6 +389,87 @@ const Index = () => {
                   Importar relatório
                 </Button>
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="mes" className="space-y-5 mt-5">
+            {loadingCurrent ? (
+              <div className="flex items-center justify-center py-20 text-muted-foreground gap-3">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Carregando inadimplência...</span>
+              </div>
+            ) : debtors.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                  <CalendarRange className="h-7 w-7 text-muted-foreground/50" />
+                </div>
+                <h3 className="font-medium text-lg text-foreground mb-1">
+                  Nenhum relatório carregado
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Importe o relatório de inadimplência em PDF para pesquisar as
+                  taxas de condomínio por mês de vencimento.
+                </p>
+              </div>
+            ) : (
+              <Suspense fallback={<SectionFallback />}>
+                {/* Pesquisa por data: apenas o mês de vencimento dos boletos */}
+                <div className="rounded-lg border bg-card p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                    <div className="w-full sm:w-72">
+                      <PeriodoFilter
+                        periodos={recorte.periodos}
+                        value={periodo}
+                        onChange={setPeriodo}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground sm:pb-2">
+                      {periodo ? (
+                        <>
+                          Taxas de condomínio com vencimento em{" "}
+                          <strong className="text-foreground">{periodoLabel}</strong>:{" "}
+                          {recorte.boletos} boleto{recorte.boletos === 1 ? "" : "s"} de{" "}
+                          {recorte.debtors.length} inadimplente
+                          {recorte.debtors.length === 1 ? "" : "s"} —{" "}
+                          <strong className="text-foreground">
+                            {formatBRL(recorte.total)}
+                          </strong>
+                        </>
+                      ) : (
+                        <>
+                          Escolha o mês de vencimento para listar os inadimplentes
+                          das taxas daquele mês.
+                          {recorte.periodos.length > 0 && (
+                            <>
+                              {" "}
+                              {recorte.periodos.length} mês
+                              {recorte.periodos.length === 1 ? "" : "es"} na base atual.
+                            </>
+                          )}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {periodo && recorte.debtors.length > 0 ? (
+                  <ErrorBoundary label="a lista de inadimplentes do mês">
+                    <DebtorsTable
+                      debtors={recorte.debtors}
+                      totalRegistros={debtors.length}
+                      periodos={recorte.periodos}
+                      periodo={periodo}
+                      onPeriodoChange={setPeriodo}
+                    />
+                  </ErrorBoundary>
+                ) : (
+                  <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+                    {recorte.periodos.length === 0
+                      ? "Nenhuma taxa com vencimento reconhecido no relatório atual."
+                      : "Selecione um mês de vencimento para ver a lista dos inadimplentes das taxas daquele mês."}
+                  </div>
+                )}
+              </Suspense>
             )}
           </TabsContent>
 

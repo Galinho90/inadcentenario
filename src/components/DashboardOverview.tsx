@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Debtor } from '@/lib/pdfParser';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,59 +14,41 @@ import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tool
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface DashboardData {
-  inadimplentes: Array<{
-    id: string;
-    nome: string;
-    unidade: string;
-    total: number;
-    created_at: string;
-  }>;
-  totalInadimplentes: number;
+interface Props {
+  /** Inadimplentes do relatório carregado na página. */
+  debtors: Debtor[];
+  /** Total em dívida do relatório carregado na página. */
   totalGeral: number;
-  quantidadeRelatorios: number;
-  quantidadeProcessos: number;
+  /** Quantidade de inadimplentes do relatório carregado na página. */
+  quantidadeInadimplentes: number;
 }
 
-export default function DashboardOverview() {
-  const [data, setData] = useState<DashboardData>({
-    inadimplentes: [],
-    totalInadimplentes: 0,
-    totalGeral: 0,
+export default function DashboardOverview({
+  debtors,
+  totalGeral,
+  quantidadeInadimplentes,
+}: Props) {
+  const [contadores, setContadores] = useState({
     quantidadeRelatorios: 0,
     quantidadeProcessos: 0,
   });
   const [loading, setLoading] = useState(true);
 
+  // Contadores do painel. Os totais de inadimplência vêm do recorte já
+  // filtrado (o painel e a tabela usam exatamente a mesma base).
   useEffect(() => {
     let cancelled = false;
 
-    const fetchData = async () => {
+    const fetchContadores = async () => {
       try {
-        const [inadRes, relRes, procRes] = await Promise.all([
-          supabase
-            .from('inadimplentes')
-            .select('id, nome, unidade, total, created_at')
-            .order('total', { ascending: false })
-            .limit(200),
+        const [relRes, procRes] = await Promise.all([
           supabase.from('relatorios').select('id', { count: 'exact', head: true }),
           supabase.from('processos_judiciais').select('id', { count: 'exact', head: true }),
         ]);
 
         if (cancelled) return;
 
-        const inadimplentes = (inadRes.data ?? []).map((r) => ({
-          id: String(r.id),
-          nome: r.nome ?? '',
-          unidade: r.unidade ?? '',
-          total: Number(r.total ?? 0),
-          created_at: r.created_at ?? '',
-        }));
-
-        setData({
-          inadimplentes,
-          totalInadimplentes: inadimplentes.length,
-          totalGeral: inadimplentes.reduce((acc, i) => acc + i.total, 0),
+        setContadores({
           quantidadeRelatorios: relRes.count ?? 0,
           quantidadeProcessos: procRes.count ?? 0,
         });
@@ -76,15 +59,15 @@ export default function DashboardOverview() {
       }
     };
 
-    fetchData();
+    fetchContadores();
     return () => {
       cancelled = true;
     };
   }, []);
 
 
-  const totalFormatado = data.totalGeral > 0
-    ? data.totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const totalFormatado = totalGeral > 0
+    ? totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     : 'R$ 0,00';
 
   // Evolução temporal (mock para demonstração)
@@ -94,21 +77,31 @@ export default function DashboardOverview() {
     { mes: 'Jul', valor: 48 },
     { mes: 'Ago', valor: 61 },
     { mes: 'Set', valor: 55 },
-    { mes: 'Out', valor: data.totalInadimplentes },
+    { mes: 'Out', valor: quantidadeInadimplentes },
   ];
 
   // Distribuição por gravidade
   const gravidadeData = [
-    { label: 'Crítico', valor: Math.floor(data.totalInadimplentes * 0.15), color: '#ef4444' },
-    { label: 'Alto', valor: Math.floor(data.totalInadimplentes * 0.25), color: '#f97316' },
-    { label: 'Médio', valor: Math.floor(data.totalInadimplentes * 0.35), color: '#eab308' },
-    { label: 'Baixo', valor: Math.floor(data.totalInadimplentes * 0.25), color: '#22c55e' },
+    { label: 'Crítico', valor: Math.floor(quantidadeInadimplentes * 0.15), color: '#ef4444' },
+    { label: 'Alto', valor: Math.floor(quantidadeInadimplentes * 0.25), color: '#f97316' },
+    { label: 'Médio', valor: Math.floor(quantidadeInadimplentes * 0.35), color: '#eab308' },
+    { label: 'Baixo', valor: Math.floor(quantidadeInadimplentes * 0.25), color: '#22c55e' },
   ];
 
-  // Inadimplentes ordenados por valor
-  const inadimplentesOrdenados = [...data.inadimplentes]
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 8);
+  // Inadimplentes ordenados por valor (dentro do recorte atual)
+  const inadimplentesOrdenados = useMemo(
+    () =>
+      [...debtors]
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 8)
+        .map((d) => ({
+          id: `${d.unidade}|${d.nome}`,
+          nome: d.nome,
+          unidade: d.unidade,
+          total: d.total,
+        })),
+    [debtors]
+  );
 
   const getGravidade = (total: number) => {
     if (total > 10000) return { label: 'Crítico', color: '#ef4444', bg: 'bg-red-500/10', text: 'text-red-500' };
@@ -129,7 +122,7 @@ export default function DashboardOverview() {
     },
     {
       title: 'Inadimplentes',
-      value: data.totalInadimplentes.toString(),
+      value: quantidadeInadimplentes.toString(),
       icon: Users,
       color: 'text-violet-500',
       bg: 'bg-violet-500/10',
@@ -138,7 +131,7 @@ export default function DashboardOverview() {
     },
     {
       title: 'Relatórios',
-      value: data.quantidadeRelatorios.toString(),
+      value: contadores.quantidadeRelatorios.toString(),
       icon: FileText,
       color: 'text-blue-500',
       bg: 'bg-blue-500/10',
@@ -147,7 +140,7 @@ export default function DashboardOverview() {
     },
     {
       title: 'Processos Judiciais',
-      value: data.quantidadeProcessos.toString(),
+      value: contadores.quantidadeProcessos.toString(),
       icon: AlertTriangle,
       color: 'text-amber-500',
       bg: 'bg-amber-500/10',
@@ -157,10 +150,10 @@ export default function DashboardOverview() {
   ];
 
   const acoesRecomendadas = [
-    { titulo: 'Revisar processos críticos', quantidade: Math.floor(data.totalInadimplentes * 0.15), prioridade: 'Crítica', color: 'text-red-500' },
-    { titulo: 'Enviar notificações', quantidade: Math.floor(data.totalInadimplentes * 0.4), prioridade: 'Alta', color: 'text-orange-500' },
-    { titulo: 'Gerar relatórios', quantidade: data.quantidadeRelatorios, prioridade: 'Média', color: 'text-yellow-500' },
-    { titulo: 'Atualizar dados', quantidade: Math.floor(data.totalInadimplentes * 0.25), prioridade: 'Normal', color: 'text-green-500' },
+    { titulo: 'Revisar processos críticos', quantidade: Math.floor(quantidadeInadimplentes * 0.15), prioridade: 'Crítica', color: 'text-red-500' },
+    { titulo: 'Enviar notificações', quantidade: Math.floor(quantidadeInadimplentes * 0.4), prioridade: 'Alta', color: 'text-orange-500' },
+    { titulo: 'Gerar relatórios', quantidade: contadores.quantidadeRelatorios, prioridade: 'Média', color: 'text-yellow-500' },
+    { titulo: 'Atualizar dados', quantidade: Math.floor(quantidadeInadimplentes * 0.25), prioridade: 'Normal', color: 'text-green-500' },
   ];
 
   if (loading) {

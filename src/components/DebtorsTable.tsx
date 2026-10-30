@@ -26,10 +26,11 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash, X, SlidersHorizontal, Download, KeyRound } from "lucide-react";
+import { Search, ChevronRight, Gavel, AlertTriangle, Scale, FileWarning, CheckCircle2, CircleSlash, X, SlidersHorizontal, Download, KeyRound, CalendarRange } from "lucide-react";
 import { exportDebtorsToExcel } from "@/lib/exportExcel";
 import { toast } from "sonner";
 import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
+import { ordenarPorUnidade } from "@/lib/ordemUnidades";
 import {
   countOverdueBoletos,
   indexByKey,
@@ -41,15 +42,31 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useJudicialSettings } from "@/lib/settings";
 import { ProcessoFormDialog } from "./ProcessoFormDialog";
 import { CopyButton } from "./CopyButton";
+import type { Periodo } from "@/lib/periodoFilter";
 
 interface Props {
+  /** Inadimplentes do recorte atual (já filtrados pelo mês de vencimento). */
   debtors: Debtor[];
+  /** Total de inadimplentes sem o recorte de período (usado no rodapé). */
+  totalRegistros?: number;
+  /** Períodos (meses de vencimento) disponíveis para filtro. */
+  periodos?: Periodo[];
+  /** Mês de vencimento selecionado no formato "AAAA-MM" (null = todos). */
+  periodo?: string | null;
+  /** Altera o mês de vencimento filtrado. */
+  onPeriodoChange?: (periodo: string | null) => void;
 }
 
 type CobrancaFilter = "todos" | "judicial" | "extrajudicial";
 type ProcessoFilter = "todos" | "com" | "sem";
 
-export function DebtorsTable({ debtors }: Props) {
+export function DebtorsTable({
+  debtors,
+  totalRegistros,
+  periodos = [],
+  periodo = null,
+  onPeriodoChange,
+}: Props) {
   const settings = useJudicialSettings();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -120,7 +137,8 @@ export function DebtorsTable({ debtors }: Props) {
       });
     }
 
-    return list;
+    // Ordena por bloco (01..15) e, dentro do bloco, por apartamento
+    return ordenarPorUnidade(list);
   }, [searchIndex, searchLower, cobrancaFilter, processoFilter, procMap, settings, minBoletos, maxBoletos]);
 
 
@@ -138,10 +156,16 @@ export function DebtorsTable({ debtors }: Props) {
     }).length;
   }, [debtors, procMap, settings]);
 
+  const periodoLabel = useMemo(
+    () => periodos.find((p) => p.chave === periodo)?.label ?? null,
+    [periodos, periodo]
+  );
+
   const activeFilterCount =
     (cobrancaFilter !== "todos" ? 1 : 0) +
     (processoFilter !== "todos" ? 1 : 0) +
-    (minBoletos.trim() || maxBoletos.trim() ? 1 : 0);
+    (minBoletos.trim() || maxBoletos.trim() ? 1 : 0) +
+    (periodo ? 1 : 0);
 
   function clearFilters() {
     setSearch("");
@@ -149,6 +173,7 @@ export function DebtorsTable({ debtors }: Props) {
     setProcessoFilter("todos");
     setMinBoletos("");
     setMaxBoletos("");
+    onPeriodoChange?.(null);
   }
 
   return (
@@ -199,7 +224,12 @@ export function DebtorsTable({ debtors }: Props) {
                   return;
                 }
                 try {
-                  exportDebtorsToExcel({ debtors: filtered, procMap, settings });
+                  exportDebtorsToExcel({
+                    debtors: filtered,
+                    procMap,
+                    settings,
+                    fileName: periodo ? `inadimplentes-${periodo}.xlsx` : undefined,
+                  });
                   toast.success(`Planilha gerada (${filtered.length} registros)`);
                 } catch (e) {
                   console.error(e);
@@ -311,6 +341,26 @@ export function DebtorsTable({ debtors }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Linha 3: recorte de vencimento aplicado (mês de vencimento) */}
+        {periodo && (
+          <div className="flex items-center gap-2 flex-wrap border-t pt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 h-7 text-xs font-medium text-secondary-foreground">
+              <CalendarRange className="h-3 w-3" />
+              Vencimentos: {periodoLabel ?? periodo}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onPeriodoChange?.(null)}
+              className="h-7 text-xs"
+              title="Voltar para todos os vencimentos"
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Limpar período
+            </Button>
+          </div>
+        )}
       </div>
 
 
@@ -324,8 +374,15 @@ export function DebtorsTable({ debtors }: Props) {
 
 
       <p className="text-xs text-muted-foreground">
-        Exibindo {filtered.length} de {debtors.length} registros — clique em uma linha
-        para ver os boletos
+        Exibindo {filtered.length} de {totalRegistros ?? debtors.length} registros
+        {periodo ? (
+          <>
+            {" "}· vencimentos de <strong className="text-foreground">{periodoLabel ?? periodo}</strong>
+          </>
+        ) : (
+          " · todos os vencimentos"
+        )}{" "}
+        — clique em uma linha para ver os boletos
       </p>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
