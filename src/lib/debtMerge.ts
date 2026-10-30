@@ -1,21 +1,17 @@
 /**
  * Regras de mesclagem de dívidas entre relatórios.
  *
- * A identidade de um devedor é composta por `unidade` + `nome` (sem diferenciar
- * maiúsculas/minúsculas e normalizando espaços), para que o mesmo morador
- * seja reconhecido mesmo com pequenas variações de digitação no PDF.
+ * A identidade de um devedor é composta por `unidade` + `nome`, comparados
+ * sem diferenciar maiúsculas/minúsculas, sem acentos e sem o sufixo de
+ * notificação ("3° Notificação"), para que o mesmo morador seja reconhecido
+ * mesmo com pequenas variações de digitação no PDF.
  */
 
-function normalize(value: string): string {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
-}
+import { chaveMorador } from "./chaveMorador";
 
-/** Chave de identificação de um devedor: `unidade|nome`. */
+/** Chave de identificação de um devedor: `unidade|nome` (normalizada). */
 export function debtorKey(unidade: string, nome: string): string {
-  return `${normalize(unidade)}|${normalize(nome)}`;
+  return chaveMorador(unidade, nome);
 }
 
 export interface MergePlan<A, N> {

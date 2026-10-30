@@ -112,6 +112,32 @@ A lista de inadimplentes (nas abas *Visão atual* e *Por mês*) é exibida na or
 A lógica fica em `src/lib/ordemUnidades.ts` (pura e coberta por testes unitários) e é
 aplicada em `src/components/DebtorsTable.tsx`.
 
+### Vínculo entre morador e processo judicial
+
+O número do processo é vinculado ao morador por uma **chave normalizada**
+(`unidade` + `nome`), que ignora caixa, acentos, espaços extras e o sufixo de
+notificação (`3° Notificação`) que aparece em algumas linhas do relatório em PDF.
+
+A lógica fica em `src/lib/chaveMorador.ts` (pura e coberta por testes unitários) e é
+usada em `src/lib/processosRepo.ts` (índice, gravação e exclusão de processos),
+`src/lib/debtMerge.ts` (mesclagem de relatórios) e nos componentes que exibem o
+processo do morador (`DebtorsTable`, `JudicialAlert`, `exportExcel`).
+
+Com isso, o mesmo morador não gera processos duplicados quando a grafia muda, e
+cadastrar/editar um processo continua EDITANDO o registro existente em vez de
+criar outro.
+
+### Importação de relatório sem risco de perda de dados
+
+A importação de um novo PDF segue a ordem **copiar → apagar**:
+
+1. o relatório novo é criado e todos os devedores/boletos do PDF são gravados nele;
+2. só depois de a cópia ficar completa, as linhas dos relatórios anteriores são
+   removidas (as dívidas que sumiram do PDF desaparecem junto).
+
+Se qualquer etapa falhar, apenas o relatório novo é apagado (rollback em cascata) e
+a lista anterior permanece intacta — a importação nunca deixa a base vazia.
+
 ### CORS com o Supabase em desenvolvimento
 
 O preview/servidor local sobe em origens temporárias (ex.: `http://127.0.0.1:<porta>`) que o

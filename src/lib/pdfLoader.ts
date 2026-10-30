@@ -1,8 +1,13 @@
 import * as pdfjsLib from "pdfjs-dist";
-// @ts-ignore - vite worker url import
 import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+
+/** Item de texto devolvido pelo pdf.js (apenas o que usamos). */
+interface ItemTexto {
+  str?: string;
+  transform?: number[];
+}
 
 /** Extrai texto de um PDF preservando quebras de linha aproximadas por Y. */
 export async function extractTextFromPdf(file: File): Promise<string> {
@@ -17,7 +22,7 @@ export async function extractTextFromPdf(file: File): Promise<string> {
     let line = "";
     const lines: string[] = [];
 
-    for (const item of content.items as any[]) {
+    for (const item of content.items as unknown as ItemTexto[]) {
       const y = item.transform?.[5];
       const str = item.str ?? "";
       if (lastY === null) {

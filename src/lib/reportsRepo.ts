@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Boleto, Debtor } from "@/lib/pdfParser";
 import { planDebtMerge } from "./debtMerge";
+import { chaveMorador } from "./chaveMorador";
 
 export interface ReportSummary {
   id: string;
@@ -194,41 +195,43 @@ async function insertDebtors(relatorioId: string, debtors: Debtor[]): Promise<vo
         total: Number(d.total) || 0,
       }))
     )
-    .select("id");
+    .select("id, unidade, nome");
 
   if (error) throw error;
 
-  const linhas = (data ?? []) as { id: string }[];
-  const boletos = debtors.flatMap((d, index) => {
-    const pai = linhas[index];
-    if (!pai) return [];
-    return d.boletos.map((b) => boletoPayload(pai.id, b));
-  });
+  // O retorno do Postgres não garante a mesma ordem de inserção, então o
+  // vínculo devedor -> id é feito pela chave normalizada (unidade + nome).
+  const filasPorChave = new Map<string, { id: string }[]>();
+  for (const linha of (data ?? []) as Array<{
+    id: string;
+    unidade: string;
+    nome: string;
+  }>) {
+    const chave = chaveMorador(linha.unidade, linha.nome);
+    const fila = filasPorChave.get(chave) ?? [];
+    fila.push({ id: linha.id });
+    filasPorChave.set(chave, fila);
+  }
 
-  if (boletos.length) {
-    const { error: boletoError } = await supabase.from("boletos").insert(boletos);
+  const boletos: ReturnType<typeof boletoPayload>[] = [];
+  for (const d of debtors) {
+    const fila = filasPorChave.get(chaveMorador(d.unidade, d.nome));
+    const pai = fila?.shift();
+    if (!pai) {
+      throw new Error(
+        `Falha ao associar o devedor "${d.nome}" (unidade ${d.unidade}) ao registro inserido.`
+      );
+    }
+    boletos.push(...d.boletos.map((b) => boletoPayload(pai.id, b)));
+  }
+
+  // Inserção em lotes, para não estourar o limite de payload do PostgREST
+  for (let i = 0; i < boletos.length; i += 500) {
+    const { error: boletoError } = await supabase
+      .from("boletos")
+      .insert(boletos.slice(i, i + 500));
     if (boletoError) throw boletoError;
   }
-}
-
-/** Sobrescreve uma dívida já existente, mantendo a mesma linha no banco. */
-async function updateInadimplente(
-  id: string,
-  patch: { relatorio_id: string; nome: string; total: number }
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("inadimplentes")
-    .update(patch)
-    .eq("id", id)
-    .select("id");
-
-  if (error) throw error;
-  return (data ?? []).length > 0;
-}
-
-async function deleteInadimplente(id: string): Promise<void> {
-  const { error } = await supabase.from("inadimplentes").delete().eq("id", id);
-  if (error) throw error;
 }
 
 /**
@@ -287,78 +290,24 @@ export async function importReport({
   const base = ((linhas ?? []) as unknown as InadimplenteRow[]) ?? [];
   const plano = planDebtMerge(base, debtors);
 
-  // Novo relatório (vigente). O anterior permanece no histórico.
-  const novo = await insertReport({ nomeArquivo, debtors });
+  // Linhas definitivas do novo PDF (sem duplicidades do próprio PDF).
+  const linhasNovas: Debtor[] = [
+    ...plano.criados,
+    ...plano.atualizados.map((a) => a.novo),
+  ];
+  const totalNovo = linhasNovas.reduce((acc, d) => acc + (Number(d.total) || 0), 0);
 
-  const boletosParaRemover: string[] = [];
-  const boletosParaInserir: ReturnType<typeof boletoPayload>[] = [];
-  const recriados: { dados: Debtor }[] = [];
+  // Novo relatório (vigente). O anterior permanece no histórico.
+  const novo = await insertReport({ nomeArquivo, debtors: linhasNovas });
 
   try {
-    // 1. Remove as dívidas que não existem mais no PDF (quitadas/fora do relatório).
-    for (const removido of plano.removidos) {
-      await deleteInadimplente(removido.id);
-    }
+    // 1. Copia todos os devedores do PDF para o relatório novo.
+    //    A base antiga só é removida depois que a cópia fica completa —
+    //    assim uma falha no meio da importação nunca apaga a lista atual.
+    await insertDebtors(novo.id, linhasNovas);
 
-    // 2. Sobrescreve as dívidas já existentes.
-    for (const { anterior, novo: dados } of plano.atualizados) {
-      const atualizado = await updateInadimplente(anterior.id, {
-        relatorio_id: novo.id,
-        nome: dados.nome,
-        total: Number(dados.total) || 0,
-      });
-
-      if (atualizado) {
-        // Mesma linha sobrescrita: só os boletos são substituídos.
-        boletosParaRemover.push(...(anterior.boletos ?? []).map((b) => b.id));
-        boletosParaInserir.push(...dados.boletos.map((b) => boletoPayload(anterior.id, b)));
-      } else {
-        // UPDATE bloqueado por RLS: recria a linha (mesmo resultado visível).
-        recriados.push({ dados });
-        await deleteInadimplente(anterior.id);
-      }
-    }
-
-    // 3. Cria apenas as dívidas que ainda não existiam.
-    if (plano.criados.length) {
-      await insertDebtors(novo.id, plano.criados);
-    }
-
-    // 4. Recria (quando necessário) as linhas que não puderam ser sobrescritas.
-    for (const { dados } of recriados) {
-      const { data: criado, error: criarError } = await supabase
-        .from("inadimplentes")
-        .insert({
-          relatorio_id: novo.id,
-          unidade: dados.unidade,
-          nome: dados.nome,
-          total: Number(dados.total) || 0,
-        })
-        .select("id")
-        .single();
-      if (criarError) throw criarError;
-      boletosParaInserir.push(
-        ...dados.boletos.map((b) => boletoPayload((criado as { id: string }).id, b))
-      );
-    }
-
-    // 5. Substitui os boletos das dívidas sobrescritas.
-    if (boletosParaRemover.length) {
-      const { error: removerError } = await supabase
-        .from("boletos")
-        .delete()
-        .in("id", boletosParaRemover);
-      if (removerError) throw removerError;
-    }
-    if (boletosParaInserir.length) {
-      const { error: inserirError } = await supabase
-        .from("boletos")
-        .insert(boletosParaInserir);
-      if (inserirError) throw inserirError;
-    }
-
-    // 6. Limpa linhas de importações anteriores que ainda existam no banco
-    //    (evita que o total geral some relatórios velhos).
+    // 2. Remove as linhas dos relatórios anteriores (os boletos caem em
+    //    cascata). As dívidas que não existem mais no PDF desaparecem junto.
     const { data: relatorios, error: relatoriosError } = await supabase
       .from("relatorios")
       .select("id");
@@ -377,6 +326,9 @@ export async function importReport({
     }
   } catch (err) {
     console.error("Falha ao importar relatório", err);
+    // Rollback: apaga apenas o relatório novo (cascade). A base anterior
+    // permanece intacta — a lista nunca fica vazia por causa de um erro.
+    await supabase.from("relatorios").delete().eq("id", novo.id);
     throw err;
   }
 
@@ -385,8 +337,8 @@ export async function importReport({
     criados: plano.criados.length,
     atualizados: plano.atualizados.length,
     removidos: plano.removidos.length,
-    quantidade: debtors.length,
-    total: totalGeral,
+    quantidade: linhasNovas.length,
+    total: totalNovo,
   };
 }
 

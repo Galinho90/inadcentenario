@@ -54,12 +54,13 @@ export default function Register() {
       });
       if (error) throw error;
       setStep("confirm");
-    } catch (err: any) {
-      const msg = err.message?.toLowerCase() ?? "";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      const msg = message.toLowerCase();
       if (msg.includes("already")) {
         toast.error("Este e-mail já está cadastrado. Tente fazer login.");
       } else {
-        toast.error(err.message || "Erro ao criar conta.");
+        toast.error(message || "Erro ao criar conta.");
       }
     } finally {
       setLoading(false);

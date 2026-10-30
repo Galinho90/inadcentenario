@@ -8,6 +8,7 @@ import {
   isJudicial,
 } from "@/lib/processosRepo";
 import type { JudicialSettings } from "@/lib/settings";
+import { chaveMorador } from "@/lib/chaveMorador";
 
 interface ExportParams {
   debtors: Debtor[];
@@ -21,7 +22,7 @@ function tipoCobranca(
   procMap: Map<string, ProcessoJudicial>,
   settings: JudicialSettings
 ): string {
-  const proc = procMap.get(`${d.unidade}|${d.nome}`);
+  const proc = procMap.get(chaveMorador(d.unidade, d.nome));
   if (proc?.tipo === "judicial") return "Judicial (ativo)";
   if (proc?.tipo === "extrajudicial") return "Extrajudicial (ativo)";
   if (isJudicial(d, settings)) return "Elegível judicial";
@@ -39,7 +40,7 @@ export function exportDebtorsToExcel({
   // Aba 1: Resumo por inadimplente
   const atrasoKey = `Boletos +${settings.minAtrasoDias}d`;
   const resumoRows = debtors.map((d) => {
-    const proc = procMap.get(`${d.unidade}|${d.nome}`);
+    const proc = procMap.get(chaveMorador(d.unidade, d.nome));
     return {
       Unidade: d.unidade,
       Nome: d.nome,

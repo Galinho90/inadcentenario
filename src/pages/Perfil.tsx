@@ -46,8 +46,10 @@ export default function Perfil() {
       toast.success("Senha alterada com sucesso!");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao alterar senha");
+    } catch (err: unknown) {
+      toast.error(
+        (err instanceof Error ? err.message : String(err)) || "Erro ao alterar senha"
+      );
     } finally {
       setLoading(false);
     }

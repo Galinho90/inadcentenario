@@ -31,6 +31,7 @@ import { exportDebtorsToExcel } from "@/lib/exportExcel";
 import { toast } from "sonner";
 import { Debtor, formatBRL, getBoletoAtraso } from "@/lib/pdfParser";
 import { ordenarPorUnidade } from "@/lib/ordemUnidades";
+import { chaveMorador } from "@/lib/chaveMorador";;
 import {
   countOverdueBoletos,
   indexByKey,
@@ -110,7 +111,7 @@ export function DebtorsTable({
 
     if (cobrancaFilter !== "todos") {
       list = list.filter((d) => {
-        const proc = procMap.get(`${d.unidade}|${d.nome}`);
+        const proc = procMap.get(chaveMorador(d.unidade, d.nome));
         if (cobrancaFilter === "judicial") {
           return (proc && proc.tipo === "judicial") || (isJudicial(d, settings) && !proc);
         }
@@ -120,7 +121,7 @@ export function DebtorsTable({
 
     if (processoFilter !== "todos") {
       list = list.filter((d) => {
-        const proc = procMap.get(`${d.unidade}|${d.nome}`);
+        const proc = procMap.get(chaveMorador(d.unidade, d.nome));
         const isJudEligivel = (proc && proc.tipo === "judicial") || isJudicial(d, settings);
         if (!isJudEligivel) return false;
         const temNumero = !!proc?.numero_processo?.trim();
@@ -144,14 +145,14 @@ export function DebtorsTable({
 
   const judicialCount = useMemo(() => {
     return debtors.filter((d) => {
-      const proc = procMap.get(`${d.unidade}|${d.nome}`);
+      const proc = procMap.get(chaveMorador(d.unidade, d.nome));
       return (proc && proc.tipo === "judicial") || isJudicial(d, settings);
     }).length;
   }, [debtors, procMap, settings]);
 
   const extrajudicialCount = useMemo(() => {
     return debtors.filter((d) => {
-      const proc = procMap.get(`${d.unidade}|${d.nome}`);
+      const proc = procMap.get(chaveMorador(d.unidade, d.nome));
       return (proc && proc.tipo === "extrajudicial") || isExtrajudicial(d, settings);
     }).length;
   }, [debtors, procMap, settings]);
@@ -406,7 +407,7 @@ export function DebtorsTable({
               <ScrollArea className="max-h-[60vh]">
                 <div className="p-6 pt-4 space-y-4">
                   {(() => {
-                    const proc = procMap.get(`${selected.unidade}|${selected.nome}`);
+                    const proc = procMap.get(chaveMorador(selected.unidade, selected.nome));
                     const judicial = isJudicial(selected, settings);
                     const extrajudicial = isExtrajudicial(selected, settings);
                     const isJudicialAtivo = !!proc && proc.tipo === "judicial";
@@ -604,7 +605,7 @@ export function DebtorsTable({
         debtor={editingProc}
         existing={
           editingProc
-            ? procMap.get(`${editingProc.unidade}|${editingProc.nome}`) ?? null
+            ? procMap.get(chaveMorador(editingProc.unidade, editingProc.nome)) ?? null
             : null
         }
         open={!!editingProc}
@@ -683,7 +684,7 @@ function VirtualDebtorRows({ rows, procMap, settings, onSelect, onEditProc }: Vi
                 const judicial = isJudicial(d, settings);
                 const extrajudicial = isExtrajudicial(d, settings);
                 const overdueCount = countOverdueBoletos(d, settings.minAtrasoDias);
-                const proc = procMap.get(`${d.unidade}|${d.nome}`);
+                const proc = procMap.get(chaveMorador(d.unidade, d.nome));
                 const isJudicialAtivo = !!proc && proc.tipo === "judicial";
                 const isExtrajudicialAtivo = !!proc && proc.tipo === "extrajudicial";
                 const podeCobrarJudicial = judicial && !proc;

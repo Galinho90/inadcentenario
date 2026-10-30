@@ -37,14 +37,15 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
       navigate("/", { replace: true });
-    } catch (err: any) {
-      const msg = err.message?.toLowerCase() ?? "";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      const msg = message.toLowerCase();
       if (msg.includes("invalid")) {
         toast.error("E-mail ou senha incorretos.");
       } else if (msg.includes("not confirmed") || msg.includes("email not confirmed")) {
         toast.error("E-mail ainda não confirmado. Verifique sua caixa de entrada.");
       } else {
-        toast.error(err.message || "Erro ao autenticar");
+        toast.error(message || "Erro ao autenticar");
       }
     } finally {
       setLoading(false);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Debtor } from '@/lib/pdfParser';
+import { chaveMorador } from '@/lib/chaveMorador';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -95,7 +96,7 @@ export default function DashboardOverview({
         .sort((a, b) => b.total - a.total)
         .slice(0, 8)
         .map((d) => ({
-          id: `${d.unidade}|${d.nome}`,
+          id: chaveMorador(d.unidade, d.nome),
           nome: d.nome,
           unidade: d.unidade,
           total: d.total,

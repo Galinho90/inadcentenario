@@ -26,6 +26,7 @@ import {
 import { useProcessos, queryKeys } from "@/lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJudicialSettings } from "@/lib/settings";
+import { chaveMorador } from "@/lib/chaveMorador";
 import { toast } from "sonner";
 
 interface Props {
@@ -55,7 +56,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.processos });
 
   function openEdit(d: Debtor) {
-    const existing = map.get(`${d.unidade}|${d.nome}`);
+    const existing = map.get(chaveMorador(d.unidade, d.nome));
     setEditing(d);
     setNumero(existing?.numero_processo ?? "");
     setChave(existing?.chave_processo ?? "");
@@ -116,7 +117,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
 
   const totalDevido = elegiveis.reduce((s, d) => s + d.total, 0);
   const comProcesso = elegiveis.filter((d) =>
-    map.has(`${d.unidade}|${d.nome}`)
+    map.has(chaveMorador(d.unidade, d.nome))
   ).length;
 
   return (
@@ -153,7 +154,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
           ) : (
             <ul className="space-y-2">
               {elegiveis.map((d) => {
-                const proc = map.get(`${d.unidade}|${d.nome}`);
+                const proc = map.get(chaveMorador(d.unidade, d.nome));
                 const overdue = countOverdueBoletos(d, settings.minAtrasoDias);
                 return (
                   <li
@@ -276,7 +277,7 @@ export function JudicialAlert({ debtors, editable = false }: Props) {
               </div>
 
               <DialogFooter className="gap-2 sm:gap-0">
-                {map.has(`${editing.unidade}|${editing.nome}`) && (
+                {map.has(chaveMorador(editing.unidade, editing.nome)) && (
                   <Button
                     variant="ghost"
                     onClick={handleDelete}
